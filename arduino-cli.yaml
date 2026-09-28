@@ -1,0 +1,9 @@
+board_manager:
+  additional_urls:
+    - https://espressif.github.io/arduino-esp32/package_esp32_index.json
+directories:
+  data: /Users/meatmini/Desktop/VIRIDITAS/.arduino/data
+  downloads: /Users/meatmini/Desktop/VIRIDITAS/.arduino/downloads
+  user: /Users/meatmini/Desktop/VIRIDITAS/.arduino/user
+build_cache:
+  path: /Users/meatmini/Desktop/VIRIDITAS/.arduino/cache

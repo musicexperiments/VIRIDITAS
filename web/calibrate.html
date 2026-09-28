@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>UWB Calibration</title>
+  <style>
+    :root { color-scheme: dark; font-family: ui-rounded, system-ui, sans-serif;
+      --bg: #07110f; --card: #0f201c; --line: #2a4a43; --text: #effff9;
+      --muted: #78938b; --accent: #78e7c4; --warn: #f2c46d; --bad: #f28b82; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; color: var(--text);
+      background: radial-gradient(circle at top, #183c35, var(--bg) 65%); }
+    main { max-width: 560px; margin: 0 auto; padding: 24px 16px 48px; }
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    h1 { font-size: 1.4rem; margin: 0; }
+    h2 { font-size: 1rem; margin: 0 0 12px; }
+    a { color: var(--muted); text-decoration: none; }
+    a:hover { color: var(--text); }
+    section { background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+      padding: 16px; margin-bottom: 14px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .stat span { display: block; color: var(--muted); font-size: .8rem; margin-bottom: 2px; }
+    .stat b { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+    .stat small { color: var(--muted); font-size: .75rem; }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    input, select, button { font: inherit; color: var(--text); background: var(--bg);
+      border: 1px solid var(--line); border-radius: 10px; padding: .55em .7em; }
+    input { width: 8.5em; font-variant-numeric: tabular-nums; }
+    button { cursor: pointer; }
+    button.primary { background: var(--accent); color: #07110f; border-color: var(--accent); font-weight: 700; }
+    button:disabled { opacity: .45; cursor: default; }
+    .hint { color: var(--muted); font-size: .85rem; margin: 10px 0 0; line-height: 1.4; }
+    .ok { color: var(--accent); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+    progress { width: 100%; height: 8px; margin-top: 12px; accent-color: var(--accent); }
+    #result { margin-top: 12px; }
+    #result table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    #result td { padding: 4px 0; border-bottom: 1px solid var(--line); }
+    #result td:last-child { text-align: right; }
+    .online { display: flex; gap: 1.2em; margin-bottom: 12px; color: var(--muted); font-size: .9rem; }
+    .dot { display: inline-block; width: .65em; height: .65em; border-radius: 50%;
+      margin-right: .4em; background: var(--bad); box-shadow: 0 0 .5em var(--bad); }
+    .dot.up { background: #5fe08f; box-shadow: 0 0 .5em #5fe08f; }
+    #history table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: .9rem; }
+    #history th { color: var(--muted); font-weight: 500; text-align: right; padding: 4px 0; }
+    #history td { text-align: right; padding: 4px 0; border-top: 1px solid var(--line); }
+    #history th:first-child, #history td:first-child { text-align: left; }
+    #history button.x { padding: 0 .45em; margin-left: .5em; font-size: .8rem; color: var(--muted); }
+    #fit { margin-top: 12px; }
+    @media (max-width: 420px) { .stats { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <header><h1>Antenna delay</h1><a href="/">&larr; Distance</a></header>
+
+  <section>
+    <h2>Status</h2>
+    <div class="online"><span><i class="dot" id="anchorDot"></i><span id="anchorState">Anchor</span></span>
+      <span><i class="dot" id="tagDot"></i><span id="tagState">Tag</span></span></div>
+    <div class="stats">
+      <div class="stat"><span>Anchor</span><b id="anchorDelay">&ndash;</b><br><small id="anchorHex"></small></div>
+      <div class="stat"><span>Tag</span><b id="tagDelay">&ndash;</b><br><small id="tagSync"></small></div>
+      <div class="stat"><span>Raw distance</span><b id="raw">&ndash;</b><br><small id="rawFt">cm</small></div>
+      <div class="stat"><span>Corrected</span><b id="corrected">&ndash;</b><br><small id="correctedFt">no correction</small></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Set manually</h2>
+    <div class="row">
+      <button id="minus" aria-label="Decrease">&minus;</button>
+      <input id="value" type="number" min="0" max="65535" step="1" inputmode="numeric">
+      <button id="plus" aria-label="Increase">+</button>
+      <button id="apply" class="primary">Apply</button>
+      <button id="reset">Default</button>
+    </div>
+    <p class="hint">Applies to both boards (TX and RX). One step &asymp; <span id="perTick"></span> cm;
+      higher values read shorter.</p>
+    <p class="hint" id="applyMsg"></p>
+  </section>
+
+  <section>
+    <h2>Calibrate from a known distance</h2>
+    <div class="row">
+      <input id="known" type="number" min="0" step="any" placeholder="Distance">
+      <select id="unit"><option value="1">cm</option><option value="2.54">in</option>
+        <option value="30.48" selected>ft</option></select>
+      <select id="samples" aria-label="Readings to average"><option value="50">50 readings</option>
+        <option value="100" selected>100 readings</option><option value="200">200 readings</option></select>
+      <button id="start" class="primary">Measure</button>
+    </div>
+    <p class="hint">Tape-measure between the antennas, keep both still with line of sight and
+      away from metal and the floor.</p>
+    <progress id="progress" max="1" value="0" hidden></progress>
+    <div id="result"></div>
+  </section>
+
+  <section>
+    <h2>Accuracy across distances</h2>
+    <div id="history"></div>
+    <p class="hint">Every measurement above is added here. Measure across the whole range
+      you use (for a 4&times;4 ft square: 1, 1.5, 2, 3, 4, 5, 5.5 ft).</p>
+    <div id="fit"></div>
+    <div class="row" style="margin-top:12px">
+      <button id="bestDelay" class="primary">Apply best delay</button>
+      <button id="saveCorrection" class="primary">Save as correction</button>
+      <button id="clearCorrection">Remove correction</button>
+      <button id="clearHistory">Clear table</button>
+    </div>
+    <p class="hint"><b>Step 1:</b> measure every distance, then <b>Apply best delay</b>.
+      <b>Step 2:</b> clear the table, measure every distance again, then <b>Save as correction</b>.</p>
+    <p class="hint" id="fitMsg"></p>
+  </section>
+</main>
+<script src="/correction.js"></script>
+<script>
+  const DEFAULT_DELAY = 16330;
+  const CM_PER_TICK = 2 * 299702547 / (499200000 * 128) * 100;
+  const $ = id => document.getElementById(id);
+  let latest = null, busy = false, edited = false;
+  $('perTick').textContent = CM_PER_TICK.toFixed(2);
+
+  async function getJSON(url) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    try {
+      const response = await fetch(url, {cache: 'no-store', signal: controller.signal});
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      return await response.json();
+    } finally { clearTimeout(timeout); }
+  }
+
+  function online(anchor, tag) {
+    $('anchorDot').classList.toggle('up', anchor);
+    $('tagDot').classList.toggle('up', tag);
+    $('anchorState').textContent = 'Anchor ' + (anchor ? 'online' : 'offline');
+    $('tagState').textContent = 'Tag ' + (tag ? 'online' : 'offline');
+  }
+
+  let correction = null;
+  loadCorrection().then(c => { correction = c; renderHistory(); });
+
+  let history = [];
+  try { history = JSON.parse(localStorage.getItem('uwbHistory')) || []; } catch (_) {}
+  function saveHistory() {
+    try { localStorage.setItem('uwbHistory', JSON.stringify(history)); } catch (_) {}
+  }
+  function renderHistory() {
+    if (!history.length) { $('history').innerHTML = '<p class="hint">No measurements yet.</p>'; return; }
+    const rows = history.map((h, i) => ({...h, i})).sort((a, b) => a.known - b.known).map(h =>
+      '<tr><td>' + (h.known / 30.48).toFixed(2) + ' ft</td><td>' + (h.mean / 30.48).toFixed(2) + ' ft</td>' +
+      '<td class="' + (Math.abs(h.mean - h.known) <= 10 ? 'ok' : 'warn') + '">' +
+      (h.mean - h.known >= 0 ? '+' : '') + (h.mean - h.known).toFixed(1) + ' cm</td>' +
+      '<td>' + h.sd.toFixed(1) + '</td><td>' + h.delay +
+      '<button class="x" data-i="' + h.i + '" aria-label="Remove row">&times;</button></td></tr>').join('');
+    // Straight-line fit of error vs distance, using rows at the current delay.
+    const same = history.filter(h => h.delay === history[history.length - 1].delay);
+    let trend = '';
+    if (new Set(same.map(h => h.known)).size >= 2) {
+      const n = same.length, mx = same.reduce((a, h) => a + h.known, 0) / n;
+      const my = same.reduce((a, h) => a + h.mean - h.known, 0) / n;
+      const slope = same.reduce((a, h) => a + (h.known - mx) * (h.mean - h.known - my), 0) /
+                    same.reduce((a, h) => a + (h.known - mx) ** 2, 0);
+      trend = '<p class="hint">At delay ' + same[0].delay + ', the error changes by ' +
+        (slope * 30.48 >= 0 ? '+' : '') + (slope * 30.48).toFixed(1) + ' cm per ft of distance.</p>';
+    }
+    $('history').innerHTML = '<table><tr><th>Actual</th><th>Measured</th><th>Error</th><th>&plusmn; cm</th>' +
+      '<th>Delay</th></tr>' + rows + '</table>' + trend;
+    document.querySelectorAll('#history button.x').forEach(b => b.onclick = () => {
+      history.splice(Number(b.dataset.i), 1); saveHistory(); renderHistory();
+    });
+    renderFit();
+  }
+
+  const currentDelay = () => latest ? latest.antenna_delay : history.length ? history[history.length - 1].delay : null;
+
+  // Error each row would have at `delay`: one delay step moves every reading by CM_PER_TICK.
+  const errorAt = (h, delay) => h.mean - h.known - (delay - h.delay) * CM_PER_TICK;
+
+  function bestDelay() {
+    const delay = currentDelay();
+    if (delay === null || new Set(history.map(h => h.known)).size < 2) return null;
+    const meanError = history.reduce((a, h) => a + errorAt(h, delay), 0) / history.length;
+    const best = Math.min(65535, Math.max(0, delay + Math.round(meanError / CM_PER_TICK)));
+    return {best, worst: Math.max(...history.map(h => Math.abs(errorAt(h, best))))};
+  }
+
+  // Rows at the current delay, averaged per distance, sorted by reading.
+  function correctionPoints() {
+    const delay = currentDelay(), byKnown = new Map();
+    for (const h of history.filter(h => h.delay === delay)) {
+      const key = h.known.toFixed(1);
+      byKnown.set(key, [...(byKnown.get(key) || []), h]);
+    }
+    const points = [...byKnown.values()].map(rows => [
+      rows.reduce((a, h) => a + h.mean, 0) / rows.length,
+      rows.reduce((a, h) => a + h.known, 0) / rows.length]).sort((a, b) => a[1] - b[1]);
+    const increasing = points.every((p, i) => !i || p[0] > points[i - 1][0]);
+    return {delay, points, increasing};
+  }
+
+  function renderFit() {
+    const fit = bestDelay();
+    const active = correction && correction.points && correction.points.length >= 2;
+    $('fit').innerHTML = (fit ? '<p class="hint">Best single delay for all rows: <b>' + fit.best +
+      '</b> (largest remaining error &asymp; ' + fit.worst.toFixed(1) + ' cm).</p>' : '') +
+      '<p class="hint">Correction: ' + (!active ? 'none' :
+        correction.points.length + ' points at delay ' + correction.delay +
+        (latest && correction.delay !== latest.antenna_delay ?
+          ' <span class="warn">(not used: the delay has changed; save a new one)</span>' :
+          ' <span class="ok">(in use)</span>')) + '</p>';
+    $('bestDelay').disabled = !fit || busy;
+    $('saveCorrection').disabled = correctionPoints().points.length < 2 || busy;
+  }
+
+  $('bestDelay').onclick = async () => {
+    const fit = bestDelay();
+    if (fit && await setDelay(fit.best))
+      $('fitMsg').innerHTML = '<span class="ok">Delay set to ' + fit.best +
+        '. Now clear the table and measure every distance again for step 2.</span>';
+  };
+
+  $('saveCorrection').onclick = async () => {
+    const {delay, points, increasing} = correctionPoints();
+    if (!increasing) {
+      $('fitMsg').innerHTML = '<span class="bad">Readings do not increase with distance; ' +
+        're-measure the rows that look wrong (remove them with &times;).</span>';
+      return;
+    }
+    const response = await fetch('/api/correction', {method: 'POST',
+      body: JSON.stringify({delay, points})}).catch(() => null);
+    if (!response || !response.ok) {
+      $('fitMsg').innerHTML = '<span class="bad">Could not save the correction.</span>'; return;
+    }
+    correction = {delay, points};
+    $('fitMsg').innerHTML = '<span class="ok">Correction saved; the distance page uses it now.</span>';
+    renderFit();
+  };
+
+  $('clearCorrection').onclick = async () => {
+    await fetch('/api/correction', {method: 'POST', body: '{}'}).catch(() => null);
+    correction = null; $('fitMsg').textContent = ''; renderFit();
+  };
+  $('clearHistory').onclick = () => { history = []; saveHistory(); renderHistory(); };
+  renderHistory();
+
+  function render(data) {
+    $('anchorDelay').textContent = data.antenna_delay;
+    $('anchorHex').textContent = '0x' + data.antenna_delay.toString(16).toUpperCase().padStart(4, '0');
+    const synced = data.tag_antenna_delay === data.antenna_delay;
+    $('tagDelay').textContent = data.tag_antenna_delay < 0 ? '?' : data.tag_antenna_delay;
+    $('tagSync').textContent = data.tag_antenna_delay < 0 ? 'not heard yet' : synced ? 'in sync' : 'syncing…';
+    $('tagSync').className = synced ? 'ok' : 'warn';
+    $('raw').textContent = data.valid ? data.raw_cm.toFixed(1) : '–';
+    $('rawFt').textContent = data.valid ? 'cm · ' + (data.raw_cm / 30.48).toFixed(2) + ' ft' : 'cm';
+    if (!edited) $('value').value = data.antenna_delay;
+    const active = correction && correction.points && correction.delay === data.antenna_delay;
+    const fixed = data.valid && active ? correctDistance(correction, data.raw_cm, data.antenna_delay) : null;
+    $('corrected').textContent = fixed === null ? '–' : fixed.toFixed(1);
+    $('correctedFt').textContent = fixed === null ? (active ? 'cm' : 'no correction') :
+      'cm · ' + (fixed / 30.48).toFixed(2) + ' ft';
+  }
+
+  async function poll() {
+    try {
+      const before = latest && latest.antenna_delay;
+      latest = await getJSON('/api/distance'); render(latest); online(true, latest.valid);
+      if (before !== latest.antenna_delay) renderFit();
+    }
+    catch (_) {
+      online(false, false);
+      $('tagSync').textContent = 'anchor offline'; $('tagSync').className = 'bad';
+    }
+    finally { setTimeout(poll, 250); }
+  }
+
+  async function setDelay(value) {
+    if (!Number.isInteger(value) || value < 0 || value > 65535) {
+      $('applyMsg').innerHTML = '<span class="bad">Enter a whole number from 0 to 65535.</span>';
+      return false;
+    }
+    try {
+      const response = await fetch('/api/antenna-delay', {method: 'POST',
+        body: new URLSearchParams({value})});
+      if (!response.ok) throw new Error(await response.text());
+      edited = false;
+      $('applyMsg').innerHTML = '<span class="ok">Set to ' + value + '. The tag follows on its next exchange.</span>';
+      return true;
+    } catch (error) {
+      $('applyMsg').innerHTML = '<span class="bad">Could not set: ' + error.message + '</span>';
+      return false;
+    }
+  }
+
+  $('value').addEventListener('input', () => { edited = true; });
+  $('minus').onclick = () => { edited = true; $('value').value = Math.max(0, +$('value').value - 1); };
+  $('plus').onclick = () => { edited = true; $('value').value = Math.min(65535, +$('value').value + 1); };
+  $('apply').onclick = () => setDelay(Number($('value').value));
+  $('reset').onclick = () => setDelay(DEFAULT_DELAY);
+
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  async function measure() {
+    const knownCm = Number($('known').value) * Number($('unit').value);
+    const wanted = Number($('samples').value);
+    if (!(knownCm > 0)) {
+      $('result').innerHTML = '<p class="hint bad">Enter the measured distance first.</p>';
+      return;
+    }
+    busy = true; $('start').disabled = true; renderFit();
+    $('progress').hidden = false; $('progress').value = 0;
+    $('result').innerHTML = '<p class="hint">Collecting… keep both boards still.</p>';
+    const values = [], seen = new Set();
+    let delay = null;
+    const deadline = Date.now() + 60000;
+    while (values.length < wanted && Date.now() < deadline) {
+      try {
+        const data = await getJSON('/api/distance');
+        if (delay === null) delay = data.antenna_delay;
+        if (data.antenna_delay !== delay) {
+          $('result').innerHTML = '<p class="hint bad">The delay changed while measuring. Try again.</p>';
+          values.length = 0; break;
+        }
+        if (data.valid && data.tag_antenna_delay === delay && !seen.has(data.sequence)) {
+          seen.add(data.sequence); values.push(data.raw_cm);
+          $('progress').value = values.length / wanted;
+        }
+      } catch (_) {}
+      await sleep(100);
+    }
+    busy = false; $('start').disabled = false; $('progress').hidden = true; renderFit();
+    if (values.length < 2) {
+      if (!$('result').textContent.includes('changed'))
+        $('result').innerHTML = '<p class="hint bad">No readings. Check that both boards are powered and ranging.</p>';
+      return;
+    }
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+    const sd = Math.sqrt(values.reduce((a, v) => a + (v - mean) ** 2, 0) / (values.length - 1));
+    const error = mean - knownCm;
+    const suggested = delay + Math.round(error / CM_PER_TICK);
+    history.push({known: knownCm, mean, sd, delay, n: values.length});
+    saveHistory(); renderHistory();
+    const partial = values.length < wanted ? ' (timed out: ' + values.length + ' samples)' : '';
+    const inRange = suggested >= 0 && suggested <= 65535;
+    $('result').innerHTML =
+      '<table>' +
+      '<tr><td>Known distance</td><td>' + knownCm.toFixed(1) + ' cm</td></tr>' +
+      '<tr><td>Measured (mean of ' + values.length + ')</td><td>' + mean.toFixed(1) + ' cm</td></tr>' +
+      '<tr><td>Error</td><td>' + (error >= 0 ? '+' : '') + error.toFixed(1) + ' cm</td></tr>' +
+      '<tr><td>Noise (std dev)</td><td>' + sd.toFixed(1) + ' cm</td></tr>' +
+      '<tr><td>Current delay</td><td>' + delay + '</td></tr>' +
+      '<tr><td><b>Suggested delay</b></td><td><b>' + (inRange ? suggested : 'out of range') + '</b></td></tr>' +
+      '</table>' +
+      '<p class="hint">' + partial +
+      (suggested === delay ? ' <span class="ok">Already calibrated.</span>' :
+       inRange ? ' Apply it, then measure again to verify.' : ' <span class="bad">Check the setup.</span>') + '</p>' +
+      (inRange && suggested !== delay ? '<button id="applySuggested" class="primary">Apply ' + suggested + '</button>' : '');
+    const button = $('applySuggested');
+    if (button) button.onclick = async () => {
+      if (await setDelay(suggested)) { button.disabled = true; button.textContent = 'Applied'; }
+    };
+  }
+
+  $('start').onclick = () => { if (!busy) measure(); };
+  poll();
+</script>
+</body>
+</html>

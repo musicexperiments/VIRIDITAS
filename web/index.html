@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>UWB Position</title>
+  <style>
+    :root { color-scheme: dark; font-family: ui-rounded, system-ui, sans-serif;
+      --text: #effff9; --muted: #78938b; --line: #2a4a43; --accent: #78e7c4; --card: #0f201c;
+      --tag: #78e7c4; --anchor: #f2c46d; --bad: #f28b82; --good: #5fe08f; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; color: var(--text);
+      background: radial-gradient(circle at top, #183c35, #07110f 65%); }
+    header { display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      padding: 16px; flex-wrap: wrap; }
+    .pill { display: flex; flex-wrap: wrap; gap: .4em .9em; color: var(--muted); font-size: .9rem;
+      padding: .4em .8em; border: 1px solid var(--line); border-radius: 999px; text-decoration: none;
+      background: none; font-family: inherit; }
+    a.pill:hover, button.pill:hover { color: var(--text); border-color: var(--accent); cursor: pointer; }
+    label.pill { cursor: pointer; align-items: center; }
+    .dot { display: inline-block; width: .65em; height: .65em; border-radius: 50%; margin-right: .35em;
+      background: var(--bad); box-shadow: 0 0 .5em var(--bad); }
+    .dot.up { background: var(--good); box-shadow: 0 0 .5em var(--good); }
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; }
+    main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0 16px 24px; }
+
+    #coords { display: flex; gap: clamp(1.5rem, 6vw, 5rem); justify-content: center; flex-wrap: wrap;
+      font-variant-numeric: tabular-nums; line-height: 1; margin: 4px 0 6px; }
+    .coord { display: grid; grid-template-columns: auto auto; align-items: baseline; column-gap: .15em; }
+    .coord .feet { grid-column: 2; font-size: clamp(1.1rem, 2.6vw, 1.8rem); color: var(--accent);
+      font-weight: 700; text-align: right; margin-top: .2em; font-variant-numeric: tabular-nums; }
+    .axis { font-size: clamp(1.6rem, 4vw, 3rem); font-weight: 700; color: var(--muted); margin-right: .2em; }
+    .value { font-size: clamp(4rem, 13vw, 10rem); font-weight: 900; letter-spacing: -.05em; }
+    .unit { font-size: clamp(1.4rem, 3.5vw, 2.6rem); color: var(--accent); font-weight: 700; }
+    .waiting .value { color: var(--muted); }
+    #detail { color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; min-height: 1.4em; }
+    #detail b { color: var(--text); }
+    #alerts { text-align: center; margin-top: 6px; line-height: 1.5; }
+    #alerts .off { color: var(--bad); font-weight: 800; font-size: 1.1rem; }
+    #alerts .link { color: var(--anchor); font-size: .9rem; }
+    .node-name.off { fill: var(--bad); font-weight: 700; }
+
+    svg { width: 100%; max-width: 1000px; flex: 1; min-height: 300px; max-height: 55vh; }
+    .edge { stroke-linecap: round; }
+    .edge.tag { stroke: #4d8a7b; stroke-width: 3; }
+    .edge.base { stroke: #3a4f49; stroke-width: 1.5; stroke-dasharray: 2 6; }
+    .edge.stale { stroke: var(--line); stroke-dasharray: 6 8; }
+    .label-bg { fill: #0b1916; stroke: var(--line); }
+    .label { fill: var(--text); font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums;
+      text-anchor: middle; dominant-baseline: central; }
+    .label.base { fill: var(--muted); font-size: 14px; font-weight: 500; }
+    .node-name { fill: var(--muted); font-size: 15px; text-anchor: middle; }
+    .grid { stroke: #1d332e; stroke-width: 1; }
+    .grid.axis { stroke: #2f4f47; stroke-width: 1.5; }
+    .grid-label { fill: #4e6b63; font-size: 12px; text-anchor: middle; }
+
+    #layoutPanel { width: 100%; max-width: 640px; margin-top: 12px; background: var(--card);
+      border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+    #layoutPanel h2 { font-size: 1rem; margin: 0 0 4px; }
+    #layoutPanel h3 { font-size: .9rem; margin: 14px 0 0; color: var(--muted); font-weight: 600; }
+    #layoutPanel td.uwb { color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+    #layoutPanel table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+    #layoutPanel td { padding: 4px 6px 4px 0; }
+    #layoutPanel input { width: 7em; font: inherit; color: var(--text); background: #07110f;
+      border: 1px solid var(--line); border-radius: 8px; padding: .35em .5em; font-variant-numeric: tabular-nums; }
+    .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+    .buttons button { font: inherit; color: var(--text); background: #07110f; border: 1px solid var(--line);
+      border-radius: 10px; padding: .5em .8em; cursor: pointer; }
+    .buttons button.primary { background: var(--accent); color: #07110f; border-color: var(--accent); font-weight: 700; }
+    .hint { color: var(--muted); font-size: .85rem; line-height: 1.4; margin: 6px 0 0; }
+    .ok { color: var(--accent); } .warn { color: var(--anchor); }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="pill" id="online"></div>
+    <div class="controls">
+      <label class="pill"><input type="checkbox" id="showBase" checked> Anchor distances</label>
+      <button class="pill" id="toggleLayout">Anchor positions</button>
+      <a class="pill" href="/calibrate">Calibrate</a>
+    </div>
+  </header>
+  <main>
+    <div id="coords" class="waiting">
+      <div class="coord"><span class="axis">X</span><span class="value" id="x">–</span><span class="feet" id="xFt"></span></div>
+      <div class="coord"><span class="axis">Y</span><span class="value" id="y">–</span><span class="feet" id="yFt"></span></div>
+    </div>
+    <div id="detail">Waiting for ranges…</div>
+    <div id="alerts" role="status"></div>
+
+    <svg id="plot" viewBox="0 0 1000 620" role="img" aria-label="Positions of the anchors and the tag">
+      <g id="grid"></g><g id="edges"></g><g id="nodes"></g><g id="labels"></g>
+    </svg>
+
+    <section id="layoutPanel" hidden>
+      <h2>Anchor setup</h2>
+      <p class="hint" id="layoutState"></p>
+      <h3>1. Tape-measured distance between each pair of anchors (feet)</h3>
+      <table id="distanceTable"></table>
+      <p class="hint">Measure all four sides and both diagonals if you can; at least five are needed to fix the
+        shape. Any shape works (square, rectangle, …). The UWB column is only for comparison.</p>
+      <h3>2. Grid corner each anchor stands for</h3>
+      <table id="gridTable"></table>
+      <p class="hint">The tag's X/Y are reported in these grid units: the measured shape is mapped onto them, so a
+        4×6 ft rectangle still runs from −1 to 1 on both axes, with the feet shown underneath.</p>
+      <div class="buttons">
+        <button id="saveLayout" class="primary">Build shape and save</button>
+        <button id="clearLayout">Reset to defaults (use UWB)</button>
+      </div>
+      <p class="hint" id="layoutMsg"></p>
+    </section>
+  </main>
+  <script src="/correction.js"></script>
+  <script>
+    // Node ids from the firmware: 1 = Anchor 1 (Wi-Fi), 2 = Tag, 3..5 = Anchors 2..4.
+    const TAG = 2;
+    const NAMES = {1: 'Anchor 1', 2: 'Tag', 3: 'Anchor 2', 4: 'Anchor 3', 5: 'Anchor 4'};
+    const ANCHOR_COLORS = {1: '#f2c46d', 3: '#f5a35c', 4: '#e58fd0', 5: '#9db8ff'};
+    const SVG = 'http://www.w3.org/2000/svg';
+    const FT = 30.48;
+    const $ = id => document.getElementById(id);
+    // Two decimals without a "-0.00".
+    const fixed = v => (Math.abs(v) < 0.005 ? 0 : v).toFixed(2);
+    const ft = cm => fixed(cm / FT) + ' ft';
+    const key = (a, b) => a < b ? a + '-' + b : b + '-' + a;
+    const dist = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], (p[2] || 0) - (q[2] || 0));
+    const median = values => { const s = [...values].sort((a, b) => a - b), m = s.length >> 1;
+      return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+
+    // Grid coordinates each anchor stands for; the tag is reported in these units.
+    // A square centered on (0,0), edges at ±1: Anchor 1 top-left, then clockwise.
+    const DEFAULT_FRAME = {1: [-1, 1], 3: [1, 1], 4: [1, -1], 5: [-1, -1]};
+    let correction = null, layout = null, frame = DEFAULT_FRAME, anchorIds = [], liveLayout = null;
+    let savedDistances = null;   // Tape-measured anchor-anchor distances (cm), keyed "a-b".
+    const shown = {};
+    const lastTag = {};          // Tag distances: must be current.
+    const anchorSamples = {};    // Anchor-anchor distances: recent readings for a median.
+    const lastOnline = {};       // When each board was last reported online (ms).
+    let onlineNow = {};
+
+    (async function refreshStores() {
+      correction = await loadCorrection();
+      try {
+        const response = await fetch('/api/layout', {cache: 'no-store'});
+        const data = response.ok ? await response.json() : {};
+        layout = data.anchors && Object.keys(data.anchors).length >= 3 ? data.anchors : null;
+        frame = data.frame && Object.keys(data.frame).length >= 3 ? data.frame : DEFAULT_FRAME;
+        savedDistances = data.distances || null;
+      } catch (_) {}
+      setTimeout(refreshStores, 5000);
+    })();
+
+    const showBase = $('showBase');
+    try { showBase.checked = localStorage.getItem('showBase') !== 'false'; } catch (_) {}
+    showBase.onchange = () => { try { localStorage.setItem('showBase', showBase.checked); } catch (_) {} };
+
+    // Anchor layout from anchor-anchor distances: trilaterate from the first two,
+    // refine against every distance, then Anchor 1 at the origin, Anchor 2 on +x,
+    // the next anchor on +y.
+    function layoutAnchors(anchors, d) {
+      const [a0, a1] = anchors, base = d(a0, a1);
+      if (!base) return null;
+      const pos = {[a0]: [0, 0], [a1]: [base, 0]};
+      for (const k of anchors.slice(2)) {
+        const r0 = d(a0, k), r1 = d(a1, k);
+        if (!r0 || !r1) continue;
+        const x = (r0 * r0 - r1 * r1 + base * base) / (2 * base);
+        const y = Math.sqrt(Math.max(0, r0 * r0 - x * x));
+        let best = [x, y], bestErr = Infinity;
+        for (const c of [[x, y], [x, -y]]) {
+          let err = 0;
+          for (const j of Object.keys(pos).map(Number))
+            if (j !== a0 && j !== a1 && d(j, k)) err += (dist(c, pos[j]) - d(j, k)) ** 2;
+          if (err < bestErr) { bestErr = err; best = c; }
+        }
+        pos[k] = best;
+      }
+      const placed = Object.keys(pos).map(Number);
+      for (let iter = 0; iter < 200; iter++) {
+        for (const i of placed) for (const j of placed) {
+          if (i >= j || !d(i, j)) continue;
+          const p = pos[i], q = pos[j], current = dist(p, q) || 1e-6;
+          const step = 0.1 * (current - d(i, j)) / current;
+          const dx = (q[0] - p[0]) * step, dy = (q[1] - p[1]) * step;
+          p[0] += dx; p[1] += dy; q[0] -= dx; q[1] -= dy;
+        }
+      }
+      const [ox, oy] = pos[a0], angle = Math.atan2(pos[a1][1] - oy, pos[a1][0] - ox);
+      const cos = Math.cos(-angle), sin = Math.sin(-angle);
+      for (const i of placed) {
+        const x = pos[i][0] - ox, y = pos[i][1] - oy;
+        pos[i] = [x * cos - y * sin, x * sin + y * cos];
+      }
+      const third = placed.find(i => i !== a0 && i !== a1);
+      if (third !== undefined && pos[third][1] < 0) for (const i of placed) pos[i][1] *= -1;
+      return pos;
+    }
+
+    // Tag: least-squares fit in 3D with the anchors on the floor (z = 0) and the
+    // tag at or above it, so holding the tag up does not stretch its x/y.
+    function locateTag(pos, ranges) {
+      const anchors = Object.keys(ranges).map(Number).filter(a => pos[a]);
+      if (anchors.length < 2) return null;
+      const floor = a => [pos[a][0], pos[a][1], 0];
+      const cost = p => anchors.reduce((s, a) => s + (dist(p, floor(a)) - ranges[a]) ** 2, 0);
+      const cx = anchors.reduce((s, a) => s + pos[a][0], 0) / anchors.length;
+      const cy = anchors.reduce((s, a) => s + pos[a][1], 0) / anchors.length;
+      const spread = Math.max(...anchors.map(a => ranges[a]));
+      const starts = [[cx, cy], [cx, cy + spread], [cx, cy - spread], [cx + spread, cy], [cx - spread, cy]];
+      const solveZ = anchors.length >= 3;  // Two anchors cannot also resolve height.
+      let best = null, bestCost = Infinity;
+      for (const [sx, sy] of starts) {
+        const p = [sx, sy, solveZ ? 30 : 0];
+        for (let iter = 0; iter < 400; iter++) {
+          const g = [0, 0, 0];
+          for (const a of anchors) {
+            const q = floor(a), r = dist(p, q) || 1e-6, e = r - ranges[a];
+            for (const k of [0, 1, 2]) g[k] += e * (p[k] - q[k]) / r;
+          }
+          for (const k of [0, 1, 2]) p[k] -= 0.5 * g[k] / anchors.length;
+          p[2] = solveZ ? Math.max(0, p[2]) : 0;
+        }
+        const c = cost(p);
+        if (c < bestCost) { bestCost = c; best = p; }
+      }
+      return {point: best, rms: Math.sqrt(bestCost / anchors.length), count: anchors.length};
+    }
+
+    // Least-squares affine map from measured anchor positions (cm) to their grid
+    // coordinates: handles different x/y spacing, rotation and mirroring.
+    function fitAffine(pos, grid) {
+      const ids = Object.keys(grid).filter(id => pos[id]);
+      if (ids.length < 3) return null;
+      const m = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], bu = [0, 0, 0], bv = [0, 0, 0];
+      for (const id of ids) {
+        const row = [pos[id][0], pos[id][1], 1];
+        for (let i = 0; i < 3; i++) {
+          for (let j = 0; j < 3; j++) m[i][j] += row[i] * row[j];
+          bu[i] += row[i] * grid[id][0]; bv[i] += row[i] * grid[id][1];
+        }
+      }
+      const det = a => a[0][0] * (a[1][1] * a[2][2] - a[1][2] * a[2][1]) -
+        a[0][1] * (a[1][0] * a[2][2] - a[1][2] * a[2][0]) + a[0][2] * (a[1][0] * a[2][1] - a[1][1] * a[2][0]);
+      const d = det(m);
+      if (Math.abs(d) < 1e-9 * Math.max(1, Math.abs(m[0][0] * m[1][1]))) return null;  // Anchors in a line.
+      const solve = b => [0, 1, 2].map(k => det(m.map((row, i) => row.map((v, j) => j === k ? b[i] : v))) / d);
+      const cu = solve(bu), cv = solve(bv);
+      const map = p => [cu[0] * p[0] + cu[1] * p[1] + cu[2], cv[0] * p[0] + cv[1] * p[1] + cv[2]];
+      const rms = Math.sqrt(ids.reduce((s, id) => s + dist(map(pos[id]), grid[id]) ** 2, 0) / ids.length);
+      // Physical length of one grid step along x and y: columns of the inverse linear part.
+      const l = cu[0] * cv[1] - cu[1] * cv[0];
+      const unitCm = [Math.hypot(cv[1] / l, -cv[0] / l), Math.hypot(-cu[1] / l, cu[0] / l)];
+      return {map, rms, unitCm};
+    }
+
+    function element(parent, tag, attrs) {
+      const e = document.createElementNS(SVG, tag);
+      for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+      parent.append(e);
+      return e;
+    }
+
+    function smooth(view, tagView) {
+      const target = {...view};
+      if (tagView) target[TAG] = tagView;
+      for (const [id, p] of Object.entries(target)) {
+        const rate = Number(id) === TAG ? 0.35 : 0.15;
+        shown[id] = shown[id] ? shown[id].map((v, k) => v + ((p[k] || 0) - v) * rate) : [p[0], p[1], p[2] || 0];
+      }
+      for (const id of Object.keys(shown)) if (!target[id]) delete shown[id];
+    }
+
+    let gridMode = false;
+    // Name every offline board, and tag links that fail while both ends are up.
+    function renderAlerts(nodes, edges) {
+      const now = Date.now(), lines = [];
+      for (const n of nodes) {
+        if (n.online) { lastOnline[n.id] = now; continue; }
+        const since = lastOnline[n.id] ? ' (no signal for ' + Math.round((now - lastOnline[n.id]) / 1000) + ' s)' : '';
+        lines.push('<div class="off">⚠ ' + NAMES[n.id] + ' is offline' + since +
+          ' – check its power and that it is within range.</div>');
+      }
+      // Saved tape distances far from what UWB reads now: the anchors were probably moved.
+      // UWB anchor links have been seen off by ~25 cm, so only flag clear disagreement.
+      if (savedDistances) {
+        let worst = null;
+        for (const e of edges) {
+          const saved = savedDistances[key(e.a, e.b)];
+          if (!e.base || !e.valid || !saved) continue;
+          const gap = Math.abs(e.cm - saved);
+          if (gap > Math.max(45, saved * 0.25) && (!worst || gap > worst.gap)) worst = {e, saved, gap};
+        }
+        if (worst) lines.push('<div class="off">⚠ Anchors may have moved: ' + NAMES[worst.e.a] + ' – ' + NAMES[worst.e.b] +
+          ' reads ' + ft(worst.e.cm) + ' but is saved as ' + ft(worst.saved) + '. Update Anchor positions.</div>');
+      }
+      for (const e of edges) {
+        if (e.base || e.valid || !onlineNow[e.a] || !onlineNow[e.b]) continue;
+        const other = e.a === TAG ? e.b : e.a;
+        lines.push('<div class="link">Tag ↔ ' + NAMES[other] + ': no reading (both online; check line of sight).</div>');
+      }
+      $('alerts').innerHTML = lines.join('');
+    }
+
+    function draw(edges) {
+      const ids = Object.keys(shown).map(Number);
+      const xs = ids.map(i => shown[i][0]), ys = ids.map(i => shown[i][1]);
+      const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+      const span = Math.max(maxX - minX, maxY - minY, 1e-3);
+      const scale = Math.min(820 / Math.max(maxX - minX, span * 0.2), 470 / Math.max(maxY - minY, span * 0.2));
+      const ox = 500 - (minX + maxX) / 2 * scale, oy = 310 + (minY + maxY) / 2 * scale;
+      const screen = id => [ox + shown[id][0] * scale, oy - shown[id][1] * scale];
+      $('grid').replaceChildren(); $('edges').replaceChildren(); $('nodes').replaceChildren(); $('labels').replaceChildren();
+      if (gridMode) {
+        // Integer grid lines across the visible area.
+        const x0 = Math.floor((0 - ox) / scale), x1 = Math.ceil((1000 - ox) / scale);
+        const y0 = Math.floor((oy - 620) / scale), y1 = Math.ceil(oy / scale);
+        if (x1 - x0 < 60 && y1 - y0 < 60) {
+          for (let gx = x0; gx <= x1; gx++) {
+            const sx = ox + gx * scale;
+            element($('grid'), 'line', {x1: sx, y1: 0, x2: sx, y2: 620, class: 'grid' + (gx === 0 ? ' axis' : '')});
+            element($('grid'), 'text', {x: sx, y: 612, class: 'grid-label'}).textContent = gx;
+          }
+          for (let gy = y0; gy <= y1; gy++) {
+            const sy = oy - gy * scale;
+            element($('grid'), 'line', {x1: 0, y1: sy, x2: 1000, y2: sy, class: 'grid' + (gy === 0 ? ' axis' : '')});
+            element($('grid'), 'text', {x: 12, y: sy - 4, class: 'grid-label'}).textContent = gy;
+          }
+        }
+      }
+
+      for (const e of edges) {
+        if (!shown[e.a] || !shown[e.b] || (e.base && !showBase.checked)) continue;
+        const [x1, y1] = screen(e.a), [x2, y2] = screen(e.b);
+        element($('edges'), 'line', {x1, y1, x2, y2,
+          class: 'edge ' + (e.base ? 'base' : 'tag') + (e.valid ? '' : ' stale')});
+        // Anchor-to-anchor labels sit just off their line, away from the tag.
+        const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+        let nx = 0, ny = 0;
+        if (e.base) {
+          const length = Math.hypot(x2 - x1, y2 - y1) || 1;
+          nx = -(y2 - y1) / length; ny = (x2 - x1) / length;
+          const [rx, ry] = shown[TAG] ? screen(TAG) : [500, 310];
+          if (nx * (mx - rx) + ny * (my - ry) < 0) { nx = -nx; ny = -ny; }
+          nx *= 14; ny *= 14;
+        }
+        const g = element($('labels'), 'g', {transform: 'translate(' + (mx + nx) + ' ' + (my + ny) + ')'});
+        const bg = element(g, 'rect', {class: 'label-bg', rx: 9, height: 32, y: -16});
+        const text = element(g, 'text', {class: 'label' + (e.base ? ' base' : '')});
+        text.textContent = e.valid ? ft(e.cm) : '–';
+        if (e.base) bg.remove();
+        else {
+          const width = text.getComputedTextLength() + 18;
+          bg.setAttribute('width', width); bg.setAttribute('x', -width / 2);
+        }
+      }
+      for (const id of ids) {
+        const [x, y] = screen(id);
+        const g = element($('nodes'), 'g', {transform: 'translate(' + x + ' ' + y + ')'});
+        const off = onlineNow[id] === false;
+        if (off) element(g, 'circle', {r: 22, fill: 'none', stroke: 'var(--bad)', 'stroke-width': 3});
+        if (id === TAG) element(g, 'circle', {r: 14, fill: 'var(--tag)', opacity: off ? 0.4 : 1});
+        else element(g, 'rect', {x: -12, y: -12, width: 24, height: 24, rx: 5, fill: ANCHOR_COLORS[id], opacity: off ? 0.4 : 1});
+        element(g, 'text', {class: 'node-name' + (off ? ' off' : ''), y: 38}).textContent = NAMES[id] + (off ? ' · OFFLINE' : '');
+      }
+    }
+
+    // --- Anchor setup panel ---
+    // Build anchor positions from tape-measured distances: place two anchors,
+    // add each further anchor from its distances to two placed ones (choosing the
+    // side that best fits any other distances), then relax against all of them.
+    function buildShape(ids, d) {
+      const pairs = [];
+      for (const a of ids) for (const b of ids) if (a < b && d(a, b)) pairs.push([a, b]);
+      if (!pairs.length) return null;
+      const [a0, a1] = pairs[0], pos = {[a0]: [0, 0], [a1]: [d(a0, a1), 0]};
+      let progress = true;
+      while (progress) {
+        progress = false;
+        for (const k of ids) {
+          if (pos[k]) continue;
+          const refs = Object.keys(pos).map(Number).filter(j => d(j, k));
+          if (refs.length < 2) continue;
+          const [p, q] = refs, P = pos[p], Q = pos[q], base = dist(P, Q);
+          if (base < 1e-6) continue;
+          const r1 = d(p, k), r2 = d(q, k);
+          const a = (r1 * r1 - r2 * r2 + base * base) / (2 * base), h = Math.sqrt(Math.max(0, r1 * r1 - a * a));
+          const ex = [(Q[0] - P[0]) / base, (Q[1] - P[1]) / base], ey = [-ex[1], ex[0]];
+          const candidates = [1, -1].map(sign => [P[0] + a * ex[0] + sign * h * ey[0], P[1] + a * ex[1] + sign * h * ey[1]]);
+          const err = c => refs.slice(2).reduce((s, j) => s + (dist(c, pos[j]) - d(j, k)) ** 2, 0);
+          pos[k] = err(candidates[1]) < err(candidates[0]) ? candidates[1] : candidates[0];
+          progress = true;
+        }
+      }
+      if (ids.some(id => !pos[id])) return null;
+      for (let iter = 0; iter < 500; iter++) {
+        for (const [i, j] of pairs) {
+          const P = pos[i], Q = pos[j], current = dist(P, Q) || 1e-6;
+          const step = 0.1 * (current - d(i, j)) / current;
+          const dx = (Q[0] - P[0]) * step, dy = (Q[1] - P[1]) * step;
+          P[0] += dx; P[1] += dy; Q[0] -= dx; Q[1] -= dy;
+        }
+      }
+      const rms = Math.sqrt(pairs.reduce((s, [i, j]) => s + (dist(pos[i], pos[j]) - d(i, j)) ** 2, 0) / pairs.length);
+      return {pos, rms, count: pairs.length};
+    }
+
+    const anchorPairs = () => anchorIds.flatMap(a => anchorIds.filter(b => b > a).map(b => [a, b]));
+
+    $('toggleLayout').onclick = () => { $('layoutPanel').hidden = !$('layoutPanel').hidden; renderLayoutPanel(); };
+    function renderLayoutPanel() {
+      $('layoutState').innerHTML = layout ? '<span class="ok">Using your measured anchor distances.</span>' :
+        '<span class="warn">No measured distances saved: using live UWB measurements.</span>';
+      // Prefill from saved distances, or from saved positions if only those exist.
+      const known = (a, b) => savedDistances && savedDistances[key(a, b)] ||
+        (layout && layout[a] && layout[b] ? dist(layout[a], layout[b]) : null);
+      $('distanceTable').innerHTML = '<tr><td></td><td>Tape (ft)</td><td class="uwb">UWB reads</td></tr>' +
+        anchorPairs().map(([a, b]) => {
+          const value = known(a, b), live = anchorSamples[key(a, b)];
+          const uwb = live && live.values.length ? ft(median(live.values)) : '–';
+          return '<tr><td>' + NAMES[a] + ' – ' + NAMES[b] + '</td><td><input data-pair="' + key(a, b) +
+            '" type="number" min="0" step="0.01" value="' + (value ? (value / FT).toFixed(2) : '') + '"></td>' +
+            '<td class="uwb">' + uwb + '</td></tr>';
+        }).join('');
+      $('gridTable').innerHTML = '<tr><td></td><td>Grid x</td><td>Grid y</td></tr>' + anchorIds.map(id => {
+        const g = frame[id];
+        return '<tr><td>' + NAMES[id] + '</td>' + [0, 1].map(k => '<td><input data-id="' + id + '" data-k="' + k +
+          '" type="number" step="0.1" value="' + (g ? g[k] : '') + '"></td>').join('') + '</tr>';
+      }).join('');
+    }
+
+    $('saveLayout').onclick = async () => {
+      const distances = {};
+      for (const input of $('distanceTable').querySelectorAll('input')) {
+        const value = parseFloat(input.value);
+        if (Number.isFinite(value) && value > 0) distances[input.dataset.pair] = value * FT;
+      }
+      const grid = {};
+      for (const input of $('gridTable').querySelectorAll('input')) {
+        const value = parseFloat(input.value);
+        if (Number.isFinite(value)) (grid[input.dataset.id] ||= [NaN, NaN])[input.dataset.k] = value;
+      }
+      for (const id of Object.keys(grid)) if (grid[id].some(v => !Number.isFinite(v))) delete grid[id];
+      if (Object.keys(grid).length < 3) {
+        $('layoutMsg').innerHTML = '<span class="warn">Enter grid x and y for at least three anchors.</span>'; return;
+      }
+      const shape = buildShape(anchorIds, (a, b) => distances[key(a, b)] || 0);
+      if (!shape || Object.keys(distances).length < Math.min(5, anchorPairs().length)) {
+        $('layoutMsg').innerHTML = '<span class="warn">Not enough distances to fix the shape: every anchor needs ' +
+          'distances to at least two others, and at least five in total.</span>';
+        return;
+      }
+      if (!fitAffine(shape.pos, grid)) {
+        $('layoutMsg').innerHTML = '<span class="warn">The anchors are in a straight line; the grid needs a real shape.</span>';
+        return;
+      }
+      const body = {frame: grid, anchors: shape.pos, distances};
+      const response = await fetch('/api/layout', {method: 'POST', body: JSON.stringify(body)}).catch(() => null);
+      if (!response || !response.ok) { $('layoutMsg').textContent = 'Could not save.'; return; }
+      frame = grid; layout = shape.pos; savedDistances = distances; renderLayoutPanel();
+      const inches = shape.rms / 2.54;
+      $('layoutMsg').innerHTML = inches < 1 ?
+        '<span class="ok">Shape built from ' + shape.count + ' distances; they agree within ' + inches.toFixed(1) + ' in. Saved.</span>' :
+        '<span class="warn">Saved, but your distances disagree by about ' + inches.toFixed(1) +
+        ' in; check for a typo or a mismeasured side.</span>';
+    };
+    $('clearLayout').onclick = async () => {
+      await fetch('/api/layout', {method: 'POST', body: '{}'}).catch(() => null);
+      layout = null; savedDistances = null; frame = DEFAULT_FRAME; renderLayoutPanel(); $('layoutMsg').textContent = '';
+    };
+
+    async function update() {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+        let response;
+        try {
+          response = await fetch('/api/ranges', {cache: 'no-store', signal: controller.signal});
+        } finally { clearTimeout(timeout); }
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const data = await response.json();
+
+        $('online').innerHTML = data.nodes.map(n => '<span><i class="dot' + (n.online ? ' up' : '') +
+          '"></i>' + NAMES[n.id] + '</span>').join('');
+        anchorIds = data.nodes.map(n => n.id).filter(id => id !== TAG);
+        onlineNow = Object.fromEntries(data.nodes.map(n => [n.id, n.online]));
+
+        const now = Date.now(), edges = [];
+        for (const pair of data.pairs) {
+          const cm = correctDistance(correction, pair.cm, data.antenna_delay);
+          const k = key(pair.a, pair.b), base = pair.a !== TAG && pair.b !== TAG;
+          if (base) {
+            const s = anchorSamples[k] ||= {sequence: -1, values: [], at: 0};
+            if (pair.valid && pair.sequence !== s.sequence) {
+              s.sequence = pair.sequence; s.values.push(cm); s.at = now;
+              if (s.values.length > 25) s.values.shift();
+            }
+            const fresh = s.values.length && now - s.at < 60000;
+            edges.push({a: pair.a, b: pair.b, base, valid: fresh, cm: fresh ? median(s.values) : 0});
+          } else {
+            if (pair.valid) lastTag[k] = {cm, at: now};
+            const good = lastTag[k] && now - lastTag[k].at < 2000 ? lastTag[k] : null;
+            edges.push({a: pair.a, b: pair.b, base, valid: !!good, cm: good ? good.cm : 0});
+          }
+        }
+        renderAlerts(data.nodes, edges);
+        const d = (a, b) => { const e = edges.find(e => e.base && key(e.a, e.b) === key(a, b)); return e && e.valid ? e.cm : 0; };
+        liveLayout = layoutAnchors(anchorIds, d);
+        const pos = layout || liveLayout;
+        if (!pos) { $('detail').textContent = 'Waiting for the Anchor 1 – Anchor 2 distance…'; return; }
+
+        const ranges = {};
+        for (const e of edges) if (!e.base && e.valid) ranges[e.a === TAG ? e.b : e.a] = e.cm;
+        const tag = locateTag(pos, ranges);
+        // View in grid units when the anchors fit the frame; otherwise in feet.
+        const affine = fitAffine(pos, frame);
+        gridMode = !!affine;
+        const view = {};
+        for (const id of Object.keys(pos)) view[id] = affine ? (frame[id] || affine.map(pos[id])) : pos[id].map(v => v / FT);
+        const tagView = tag && (affine ? [...affine.map(tag.point), tag.point[2]] : [tag.point[0] / FT, tag.point[1] / FT, tag.point[2]]);
+        smooth(view, tagView);
+        draw(edges);
+        if (!tag) {
+          $('coords').classList.add('waiting'); $('x').textContent = '–'; $('y').textContent = '–';
+          $('detail').textContent = 'The tag needs distances to at least two anchors.';
+          return;
+        }
+        const [x, y, z] = shown[TAG];
+        $('coords').classList.remove('waiting');
+        $('x').textContent = fixed(x);
+        $('y').textContent = fixed(y);
+        // Grid units, with the same position in feet (grid value × that axis's grid step).
+        $('xFt').textContent = affine ? ft(x * affine.unitCm[0]) : 'ft';
+        $('yFt').textContent = affine ? ft(y * affine.unitCm[1]) : 'ft';
+        $('detail').innerHTML = 'Height <b>' + ft(z) + '</b> · fit to ' + tag.count + ' anchors, ±' +
+          tag.rms.toFixed(0) + ' cm · anchors: ' + (layout ? 'saved positions' : 'live measurement') +
+          (affine ? ' · 1 grid unit = ' + ft(affine.unitCm[0]) + ' × ' + ft(affine.unitCm[1]) +
+            ' · grid fit ±' + affine.rms.toFixed(2) : ' · <span class="warn">grid needs 3 anchors not in a line</span>') +
+          (tag.count < 3 ? ' <span class="warn">(2 anchors: may be mirrored)</span>' : '');
+      } catch (_) {
+        $('online').querySelectorAll('.dot').forEach(dot => dot.classList.remove('up'));
+        $('coords').classList.add('waiting');
+        $('detail').textContent = '';
+        $('alerts').innerHTML = '<div class="off">⚠ Anchor 1 is offline – the laptop cannot reach it over Wi-Fi, ' +
+          'so the other boards cannot be checked. Check its power and the Wi-Fi.</div>';
+      } finally {
+        setTimeout(update, 150);
+      }
+    }
+    update();
+  </script>
+</body>
+</html>
