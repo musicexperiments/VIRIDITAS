@@ -121,19 +121,7 @@
         <p class="hint">Measure all four sides and both diagonals if you can; at least five are needed to fix the
           shape. The UWB column is only for comparison.</p>
       </div>
-      <h3>2. Heights (feet above the floor)</h3>
-      <table>
-        <tr><td>All anchors at</td><td><input id="anchorHeight" type="number" min="0" step="0.01"> ft</td></tr>
-      </table>
-      <div class="buttons" style="margin-top:6px">
-        <label><input type="radio" name="tagHeightMode" value="auto" checked> Tag height: measure automatically</label>
-        <label><input type="radio" name="tagHeightMode" value="fixed"> Fixed at
-          <input id="tagHeight" type="number" min="0" step="0.01" style="width:5em"> ft</label>
-      </div>
-      <p class="hint">X/Y account for the tag's height either way, so people of any height read correctly. The height
-        reading is best with the anchors low (0 = on the floor) and the tag well above them; it assumes the tag is
-        above the anchors. Tape distances above are measured along the floor.</p>
-      <h3>3. Grid corner each anchor stands for</h3>
+      <h3>2. Grid corner each anchor stands for</h3>
       <table id="gridTable"></table>
       <p class="hint">The tag's X/Y are reported in these grid units: the measured shape is mapped onto them, so a
         4×6 ft rectangle still runs from −1 to 1 on both axes, with the feet shown underneath.</p>
@@ -166,9 +154,6 @@
     const DEFAULT_FRAME = {1: [-1, 1], 3: [1, 1], 4: [1, -1], 5: [-1, -1]};
     let correction = null, layout = null, frame = DEFAULT_FRAME, anchorIds = [], liveLayout = null;
     let savedDistances = null;   // Tape-measured anchor-anchor distances (cm), keyed "a-b".
-    let heights = {};            // Anchor heights above the floor (cm), by node id.
-    let tagHeight = null;        // Fixed tag height (cm), or null to solve for it.
-    const heightOf = id => heights[id] || 0;
     const shown = {};
     const lastTag = {};          // Tag distances: must be current.
     const anchorSamples = {};    // Anchor-anchor distances: recent readings for a median.
@@ -183,8 +168,6 @@
         layout = data.anchors && Object.keys(data.anchors).length >= 3 ? data.anchors : null;
         frame = data.frame && Object.keys(data.frame).length >= 3 ? data.frame : DEFAULT_FRAME;
         savedDistances = data.distances || null;
-        heights = data.heights || {};
-        tagHeight = typeof data.tagHeight === 'number' ? data.tagHeight : null;
       } catch (_) {}
       setTimeout(refreshStores, 5000);
     })();
@@ -237,40 +220,30 @@
 
     // Tag: least-squares fit in 3D with the anchors on the floor (z = 0) and the
     // tag at or above it, so holding the tag up does not stretch its x/y.
-    // Tag: least-squares fit in 3D. Anchors sit at their heights; the tag's height is
-    // either fixed or solved. With the anchors at one height, a tag above them and its
-    // mirror image below fit equally well (same X/Y), so the tag is taken to be above.
+    // Tag: least-squares fit to its anchor distances, from several starts. The
+    // anchors and the tag are assumed to be at the same height (a flat 2D problem).
     function locateTag(pos, ranges) {
       const anchors = Object.keys(ranges).map(Number).filter(a => pos[a]);
       if (anchors.length < 2) return null;
-      const at = a => [pos[a][0], pos[a][1], heightOf(a)];
-      const cost = p => anchors.reduce((s, a) => s + (dist(p, at(a)) - ranges[a]) ** 2, 0);
+      const cost = p => anchors.reduce((s, a) => s + (dist(p, pos[a]) - ranges[a]) ** 2, 0);
       const cx = anchors.reduce((s, a) => s + pos[a][0], 0) / anchors.length;
       const cy = anchors.reduce((s, a) => s + pos[a][1], 0) / anchors.length;
       const spread = Math.max(...anchors.map(a => ranges[a]));
-      const plane = anchors.reduce((s, a) => s + heightOf(a), 0) / anchors.length;
-      const solveZ = tagHeight === null && anchors.length >= 3;  // Two anchors cannot also resolve height.
-      const fixedZ = tagHeight !== null ? tagHeight : plane;
-      const zStarts = [solveZ ? plane + 90 : fixedZ];
-      const solutions = [];
-      for (const z0 of zStarts) for (const [sx, sy] of [[cx, cy], [cx, cy + spread], [cx, cy - spread], [cx + spread, cy], [cx - spread, cy]]) {
-        const p = [sx, sy, z0];
+      let best = null, bestCost = Infinity;
+      for (const start of [[cx, cy], [cx, cy + spread], [cx, cy - spread], [cx + spread, cy], [cx - spread, cy]]) {
+        const p = [...start];
         for (let iter = 0; iter < 400; iter++) {
-          const g = [0, 0, 0];
+          let gx = 0, gy = 0;
           for (const a of anchors) {
-            const q = at(a), r = dist(p, q) || 1e-6, e = r - ranges[a];
-            for (const k of [0, 1, 2]) g[k] += e * (p[k] - q[k]) / r;
+            const r = dist(p, pos[a]) || 1e-6, e = r - ranges[a];
+            gx += e * (p[0] - pos[a][0]) / r; gy += e * (p[1] - pos[a][1]) / r;
           }
-          for (const k of [0, 1, 2]) p[k] -= 0.5 * g[k] / anchors.length;
-          p[2] = solveZ ? Math.max(plane, p[2]) : fixedZ;
+          p[0] -= 0.5 * gx / anchors.length; p[1] -= 0.5 * gy / anchors.length;
         }
-        solutions.push({p, c: cost(p)});
+        const c = cost(p);
+        if (c < bestCost) { bestCost = c; best = p; }
       }
-      solutions.sort((a, b) => a.c - b.c);
-      const best = solutions[0];
-      // Close to the anchors' height, distances barely change with height: approximate.
-      return {point: best.p, rms: Math.sqrt(best.c / anchors.length), count: anchors.length,
-              fixed: tagHeight !== null, approximate: solveZ && best.p[2] - plane < 45};
+      return {point: best, rms: Math.sqrt(bestCost / anchors.length), count: anchors.length};
     }
 
     // Least-squares affine map from measured anchor positions (cm) to their grid
@@ -537,10 +510,6 @@
             '" type="number" min="0" step="0.01" value="' + (value ? (value / FT).toFixed(2) : '') + '"></td>' +
             '<td class="uwb">' + uwb + '</td></tr>';
         }).join('');
-      if (document.activeElement !== $('anchorHeight'))
-        $('anchorHeight').value = (Math.max(0, ...anchorIds.map(heightOf)) / FT).toFixed(2);
-      document.querySelector('input[name="tagHeightMode"][value="' + (tagHeight === null ? 'auto' : 'fixed') + '"]').checked = true;
-      if (document.activeElement !== $('tagHeight')) $('tagHeight').value = tagHeight === null ? '' : (tagHeight / FT).toFixed(2);
       $('gridTable').innerHTML = '<tr><td></td><td>Grid x</td><td>Grid y</td></tr>' + anchorIds.map(id => {
         const g = frame[id];
         return '<tr><td>' + NAMES[id] + '</td>' + [0, 1].map(k => '<td><input data-id="' + id + '" data-k="' + k +
@@ -584,21 +553,10 @@
         $('layoutMsg').innerHTML = '<span class="warn">The anchors are in a straight line; the grid needs a real shape.</span>';
         return;
       }
-      const anchorHeight = parseFloat($('anchorHeight').value) || 0;
-      if (anchorHeight < 0) { $('layoutMsg').innerHTML = '<span class="warn">Anchor height cannot be negative.</span>'; return; }
-      const newHeights = {};
-      if (anchorHeight > 0) for (const id of anchorIds) newHeights[id] = anchorHeight * FT;
-      let newTagHeight = null;
-      if (document.querySelector('input[name="tagHeightMode"]:checked').value === 'fixed') {
-        const value = parseFloat($('tagHeight').value);
-        if (!(value >= 0)) { $('layoutMsg').innerHTML = '<span class="warn">Enter the tag height in feet.</span>'; return; }
-        newTagHeight = value * FT;
-      }
-      const body = {frame: grid, anchors: shape.pos, distances, heights: newHeights, tagHeight: newTagHeight};
+      const body = {frame: grid, anchors: shape.pos, distances};
       const response = await fetch('/api/layout', {method: 'POST', body: JSON.stringify(body)}).catch(() => null);
       if (!response || !response.ok) { $('layoutMsg').textContent = 'Could not save.'; return; }
-      frame = grid; layout = shape.pos; savedDistances = distances; heights = newHeights; tagHeight = newTagHeight;
-      renderLayoutPanel();
+      frame = grid; layout = shape.pos; savedDistances = distances; renderLayoutPanel();
       const inches = shape.rms / 2.54;
       $('layoutMsg').innerHTML = inches < 1 ?
         '<span class="ok">Shape built from ' + shape.count + ' distances; they agree within ' + inches.toFixed(1) + ' in. Saved.</span>' :
@@ -607,8 +565,7 @@
     };
     $('clearLayout').onclick = async () => {
       await fetch('/api/layout', {method: 'POST', body: '{}'}).catch(() => null);
-      layout = null; savedDistances = null; frame = DEFAULT_FRAME; heights = {}; tagHeight = null;
-      renderLayoutPanel(); $('layoutMsg').textContent = '';
+      layout = null; savedDistances = null; frame = DEFAULT_FRAME; renderLayoutPanel(); $('layoutMsg').textContent = '';
     };
 
     async function update() {
@@ -646,9 +603,7 @@
           }
         }
         renderAlerts(data.nodes, edges);
-        // UWB anchor-anchor readings are slanted when heights differ; use the floor distance.
-        const d = (a, b) => { const e = edges.find(e => e.base && key(e.a, e.b) === key(a, b));
-          return e && e.valid ? Math.sqrt(Math.max(0, e.cm ** 2 - (heightOf(a) - heightOf(b)) ** 2)) : 0; };
+        const d = (a, b) => { const e = edges.find(e => e.base && key(e.a, e.b) === key(a, b)); return e && e.valid ? e.cm : 0; };
         liveLayout = layoutAnchors(anchorIds, d);
         const pos = layout || liveLayout;
         if (!pos) { $('detail').textContent = 'Waiting for the Anchor 1 – Anchor 2 distance…'; return; }
@@ -662,7 +617,7 @@
         gridToView = affine ? g => toView(affine.inverse(g)) : null;
         const view = {};
         for (const id of Object.keys(pos)) view[id] = toView(pos[id]);
-        const tagView = tag && [...toView(tag.point), tag.point[2]];
+        const tagView = tag && toView(tag.point);
         smooth(view, tagView);
         if (tag && affine) {
           const g = affine.map(tag.point);
@@ -675,7 +630,6 @@
           $('detail').textContent = 'The tag needs distances to at least two anchors.';
           return;
         }
-        const z = shown[TAG][2];
         const [x, y] = affine && tagGrid ? tagGrid : shown[TAG];
         $('coords').classList.remove('waiting');
         $('x').textContent = fixed(x);
@@ -683,9 +637,7 @@
         // Grid units, with the same position in feet (grid value × that axis's grid step).
         $('xFt').textContent = affine ? ft(x * affine.unitCm[0]) : 'ft';
         $('yFt').textContent = affine ? ft(y * affine.unitCm[1]) : 'ft';
-        $('detail').innerHTML = 'Height <b>' + ft(z) + '</b>' + (tag.fixed ? ' (fixed)' : '') +
-          (tag.approximate ? ' <span class="warn">(approximate: tag is close to the anchors\' height)</span>' : '') +
-          ' · fit to ' + tag.count + ' anchors, ±' +
+        $('detail').innerHTML = 'Fit to ' + tag.count + ' anchors, ±' +
           tag.rms.toFixed(0) + ' cm · anchors: ' + (layout ? 'saved positions' : 'live measurement') +
           (affine ? ' · 1 grid unit = ' + ft(affine.unitCm[0]) + ' × ' + ft(affine.unitCm[1]) +
             ' · grid fit ±' + affine.rms.toFixed(2) : ' · <span class="warn">grid needs 3 anchors not in a line</span>') +
