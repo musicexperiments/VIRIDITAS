@@ -42,19 +42,38 @@ serial at 115200 baud. The browser retries failed requests without accumulating
 overlapping polls. On startup, the anchor also logs matching access points and
 their signal strengths to help distinguish reception from authentication issues.
 
-## Anchors and tag
+## Anchors and tags
 
 | Board    | Firmware            | Node | Role                                      |
 |----------|---------------------|------|-------------------------------------------|
 | Anchor 1 | `firmware/anchor`   | 1    | On Wi-Fi; schedules ranging, serves `/api` |
-| Tag      | `firmware/tag`      | 2    | The tracked board                         |
+| Tag 1    | `firmware/tag`      | 2    | Tracked board                             |
 | Anchor 2 | `firmware/anchor2`  | 3    | Fixed reference                           |
 | Anchor 3 | `firmware/anchor3`  | 4    | Fixed reference                           |
 | Anchor 4 | `firmware/anchor4`  | 5    | Fixed reference                           |
+| Tag 2    | `firmware/tag2`     | 6    | Tracked board                             |
+| Tag 3    | `firmware/tag3`     | 7    | Tracked board                             |
+| Tag 4    | `firmware/tag4`     | 8    | Tracked board                             |
 
-Anchor 1 measures every pair of boards. The tag's four distances are measured
-every cycle, at about 6 Hz each. The anchor-to-anchor distances are measured
-in turn, at about 1 Hz each. For a pair that does not include Anchor 1, it
+Tag N (N ≥ 2) is node N + 4, `firmware/tagN` and `uwb-tagN`. To add a tag:
+
+1. Raise `NODE_COUNT` in `firmware/ranging.h`.
+2. Create `firmware/tagN/tagN.ino` with `#define NODE_ID <N+4>`.
+3. USB-flash the new tag once, then run `python3 ota.py anchor`.
+
+The website picks up new tags automatically.
+
+Anchor 1 measures every pair that includes a tag each cycle: each tag to
+each anchor, and every tag to every other tag. With four tags that is 22
+pairs, each at about 4.3 Hz. Each exchange takes about 10 ms, so the rate
+falls as tags are added. Beyond this, a one-poll-many-responders scheme
+would be needed to keep it fast. It measures the anchor-to-anchor pairs in turn, at
+about 1 Hz each. Each tag is located separately and has its own row of X/Y
+and its own color on the map. The directly measured distance between each
+pair of tags is listed under the coordinates and drawn as a labelled dashed
+line. N tags give N×(N−1)/2 such pairs. Tag-to-anchor lines are drawn
+unlabelled; **Tag–anchor distances** shows their numbers. Tags held within a few centimetres of each other can fail to range,
+because the signal is too strong at that distance. For a pair that does not include Anchor 1, it
 asks one of the two boards to range the other and relay the result, and the
 two boards take turns starting. `/api/ranges` returns every pair.
 
@@ -68,7 +87,7 @@ rest go clockwise: Anchor 2 (1,1), Anchor 3 (1,-1), Anchor 4 (-1,-1). The
 feet shown are distances from the center. The grid
 values are editable under **Anchor positions**. A least-squares affine fit
 maps the real anchor positions onto the grid, so the square's physical size
-does not matter. Anchor 1 is the origin and Anchor 2 lies on the +x axis.
+does not matter.
 Under **Anchor positions**,
 choose **Rectangle or square** and enter only the tape-measured width
 (Anchor 1 to Anchor 2) and height (Anchor 2 to Anchor 3). The other sides and
@@ -87,6 +106,37 @@ position has no mirror ambiguity. Keep Anchor 1 and Anchor 2 well apart,
 because they set the baseline. Every board uses the same antenna delay
 (default 16400), which Anchor 1 pushes to the others.
 
+## OSC output
+
+`osc_bridge.py` sends each tag's position and its distances to the other tags
+as OSC, straight from Anchor 1 (the website is not involved):
+
+```sh
+python3 osc_bridge.py                 # /tagN -> 127.0.0.1:9000+N
+python3 osc_monitor.py 9001           # print what /tag1 receives
+```
+
+Anchor 1 pushes every new range to the bridge over UDP the moment it is
+measured, with no polling. The bridge subscribes with `POST /api/stream`,
+renewed every 5 s. Each range that involves a tag immediately produces one
+message, about 20 per second per tag with four tags. The message goes to
+`/tagN` on port 9000 + N, with one JSON string argument:
+
+```
+{"x": 0.62, "y": 0.41, "d12": 0.33, "d13": 0.58, "d14": "N/A"}
+```
+
+- `x`, `y`: 0 to 1 across the anchor grid (0 = left/bottom, 1 = right/top).
+- `dNK`: the directly measured distance from tag N to tag K, divided by the
+  farthest distance in the anchor shape (1 = as far apart as the shape
+  allows).
+- `"N/A"`: no reading in the last second.
+
+Positions use each newest reading, unsmoothed, for the least latency.
+`--smooth` uses the 5-reading median instead: steadier, with about 0.5 s more
+lag. `--osc-host` and `--osc-port` change the destination. The anchor layout
+comes from `web/layout.json`, as saved under **Anchor positions**.
+
 ## Update over Wi-Fi
 
 After one USB flash of this firmware, both boards can be updated over the local
@@ -95,7 +145,7 @@ Wi-Fi (no internet needed):
 ```sh
 python3 ota.py anchor
 python3 ota.py tag
-python3 ota.py anchor2
+python3 ota.py anchor2   # also anchor3, anchor4, tag2
 ```
 
 The anchor always accepts updates. The tag keeps its Wi-Fi off. `ota.py tag`

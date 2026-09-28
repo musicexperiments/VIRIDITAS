@@ -9,14 +9,17 @@
 #include <WiFi.h>
 #if NODE_ID == 1
 #include <WebServer.h>
+#include <WiFiUdp.h>
 #endif
 
-// Node ids: 1 = anchor 1 (Wi-Fi, coordinator), 2 = tag, 3..5 = anchors 2..4.
-static const uint8_t NODE_COUNT = 5;
-static const uint8_t TAG_NODE = 2;
-#if NODE_ID < 1 || NODE_ID > 5
-#error "NODE_ID must be 1..5 (1 anchor 1, 2 tag, 3-5 anchors 2-4)"
-#endif
+// Node ids: 1 = anchor 1 (Wi-Fi, coordinator), 2 = tag 1, 3..5 = anchors 2..4,
+// 6 and up = tags 2, 3, ... To add a tag, raise NODE_COUNT and give the new
+// board the next id (tag N is node N + 4).
+static const uint8_t NODE_COUNT = 8;
+static const uint8_t TAG_NODE = 2;  // Tag 1: the pair kept on /api/distance.
+static bool isTag(uint8_t node) { return node == 2 || node >= 6; }
+static_assert(NODE_ID >= 1 && NODE_ID <= NODE_COUNT,
+              "NODE_ID must be 1..NODE_COUNT (1 anchor 1, 2 tag 1, 3-5 anchors 2-4, 6+ tags 2+)");
 
 // Frame: [0] mode, [1] sender, [2] destination, [3] step, [4..] payload.
 // Any two nodes range with asymmetric DS-TWR (poll, response, final, report);
@@ -50,8 +53,11 @@ static int32_t pendingAntennaDelay = -1;
 // updates run over the local Wi-Fi (no internet). Other boards keep their
 // radio off until anchor 1 sends them an update request over UWB.
 #include "secrets.h"
+// Tag N (node N + 4, N >= 2) is uwb-tagN.
 static const char *const HOSTNAMES[] = {"", "uwb-anchor", "uwb-tag", "uwb-anchor2", "uwb-anchor3", "uwb-anchor4"};
-static const char *const HOSTNAME = HOSTNAMES[NODE_ID];
+static char tagHostname[12];
+static const char *const HOSTNAME = NODE_ID <= 5 ? HOSTNAMES[NODE_ID] :
+    (snprintf(tagHostname, sizeof(tagHostname), "uwb-tag%d", NODE_ID - 4), tagHostname);
 
 static void startOta() {
   ArduinoOTA.end();
@@ -102,7 +108,7 @@ static void serviceUpdateMode() {
 #endif
 
 #if NODE_ID == 1
-static const uint16_t SLOT_MS = 30;  // One exchange per slot.
+static const uint16_t SLOT_MS = 4;  // Minimum gap between exchanges.
 
 struct Pair {
   uint8_t a, b;
@@ -113,11 +119,11 @@ struct Pair {
 };
 // Every pair once; anchor 1 initiates its own pairs, and the two nodes of any
 // other pair take turns initiating (a one-sided RF or node fault still gets
-// through from the other side). The tag's pairs
-// come first and are ranged every cycle; the fixed anchor-to-anchor pairs
-// take one slot per cycle in turn.
-static const uint8_t PAIR_COUNT = NODE_COUNT * (NODE_COUNT - 1) / 2;
-static Pair pairs[PAIR_COUNT];
+// through from the other side). Pairs with a tag (tag-to-anchor and
+// tag-to-tag) come first and are ranged every cycle; the fixed anchor-to-anchor
+// pairs take one slot per cycle in turn.
+static Pair pairs[NODE_COUNT * (NODE_COUNT - 1) / 2];
+static uint8_t PAIR_COUNT = 0;
 static uint8_t tagPairCount = 0;
 static uint8_t cycleSlot = 0, nextAnchorPair = 0, currentPair = 0;
 static uint32_t lastSlotAt = 0;
@@ -125,11 +131,13 @@ static int32_t nodeDelay[NODE_COUNT + 1];
 
 static void buildPairs() {
   uint8_t count = 0;
-  for (int tagPass = 1; tagPass >= 0; --tagPass)
+  for (int tagPass = 1; tagPass >= 0; --tagPass) {
     for (uint8_t a = 1; a <= NODE_COUNT; ++a)
       for (uint8_t b = a + 1; b <= NODE_COUNT; ++b)
-        if ((a == TAG_NODE || b == TAG_NODE) == tagPass) { pairs[count].a = a; pairs[count++].b = b; }
-  tagPairCount = NODE_COUNT - 1;
+        if ((isTag(a) || isTag(b)) == tagPass) { pairs[count].a = a; pairs[count++].b = b; }
+    if (tagPass) tagPairCount = count;
+  }
+  PAIR_COUNT = count;
   for (int32_t &delay : nodeDelay) delay = -1;
 }
 
@@ -145,6 +153,13 @@ static uint8_t updateNode = 0;
 static uint32_t updateRequestedAt = 0;
 
 static WebServer webServer(80);
+// Low-latency stream: each new range is sent by UDP to whoever subscribed via
+// POST /api/stream?port=N, for 15 s after their last subscription.
+static WiFiUDP streamUdp;
+static IPAddress streamIp;
+static uint16_t streamPort = 0;
+static uint32_t streamRenewedAt = 0;
+static const uint32_t STREAM_LEASE_MS = 15000;
 static uint32_t wifiAttemptAt = 0;
 static bool wifiWasConnected = false;
 static bool wifiRestartPending = false;
@@ -169,6 +184,15 @@ static void recordRange(uint8_t a, uint8_t b, bool ok, double cm) {
   pair->filteredCm = pair->filter.push(cm);
   pair->at = millis();
   ++pair->sequence;
+  // "R,a,b,raw_cm,filtered_cm,sequence"
+  if (streamPort && millis() - streamRenewedAt < STREAM_LEASE_MS && WiFi.status() == WL_CONNECTED) {
+    char line[64];
+    const int length = snprintf(line, sizeof(line), "R,%u,%u,%.2f,%.2f,%lu\n", pair->a, pair->b, pair->rawCm,
+                                pair->filteredCm, static_cast<unsigned long>(pair->sequence));
+    streamUdp.beginPacket(streamIp, streamPort);
+    streamUdp.write(reinterpret_cast<const uint8_t *>(line), length);
+    streamUdp.endPacket();
+  }
 }
 
 static void setAntennaDelay(uint16_t delay);
@@ -232,10 +256,21 @@ static void startWebServer() {
     snprintf(json, sizeof(json), "{\"antenna_delay\":%u}", antennaDelay);
     webServer.send(200, "application/json", json);
   });
+  webServer.on("/api/stream", HTTP_POST, []() {
+    const long port = webServer.arg("port").toInt();
+    if (port < 1 || port > 65535) {
+      webServer.send(400, "text/plain", "port must be 1 to 65535");
+      return;
+    }
+    streamIp = webServer.client().remoteIP();
+    streamPort = port;
+    streamRenewedAt = millis();
+    webServer.send(200, "application/json", "{\"streaming\":true}");
+  });
   webServer.on("/api/tag-update", HTTP_POST, []() {
     const long node = webServer.hasArg("node") ? webServer.arg("node").toInt() : 2;
     if (node < 2 || node > NODE_COUNT) {
-      webServer.send(400, "text/plain", "node must be 2 to 5");
+      webServer.send(400, "text/plain", "node must be 2 to NODE_COUNT");
       return;
     }
     updateNode = node;

@@ -3,7 +3,7 @@
 
   python3 ota.py anchor
   python3 ota.py tag      # asks the anchor to wake the tag's Wi-Fi first
-  python3 ota.py anchor2  # also anchor3, anchor4; woken by anchor 1 over UWB
+  python3 ota.py anchor2  # also anchor3, anchor4, tag2, tag3, ...; woken by anchor 1 over UWB
 """
 import argparse
 import socket
@@ -22,6 +22,10 @@ PASSWORD = _match.group(1) if _match else None
 HOSTS = {'anchor': 'uwb-anchor.local', 'tag': 'uwb-tag.local', 'anchor2': 'uwb-anchor2.local',
          'anchor3': 'uwb-anchor3.local', 'anchor4': 'uwb-anchor4.local'}
 NODES = {'tag': 2, 'anchor2': 3, 'anchor3': 4, 'anchor4': 5}
+# Tag N (N >= 2) is node N + 4, firmware/tagN, hostname uwb-tagN.
+for n in range(2, 10):
+    HOSTS[f'tag{n}'] = f'uwb-tag{n}.local'
+    NODES[f'tag{n}'] = n + 4
 ESPOTA = next((ROOT / '.arduino').rglob('tools/espota.py'), None)
 
 
@@ -38,7 +42,7 @@ def resolve(host, timeout):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('board', choices=HOSTS)
+    parser.add_argument('board', choices=[b for b in HOSTS if (ROOT / 'firmware' / b).is_dir()])
     parser.add_argument('--anchor', default=HOSTS['anchor'], help='anchor hostname or IP')
     parser.add_argument('--ip', help='board IP, if its .local name does not resolve')
     args = parser.parse_args()

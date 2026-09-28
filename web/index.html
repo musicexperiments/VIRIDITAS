@@ -33,6 +33,21 @@
     .value { font-size: clamp(4rem, 13vw, 10rem); font-weight: 900; letter-spacing: -.05em; }
     .unit { font-size: clamp(1.4rem, 3.5vw, 2.6rem); color: var(--accent); font-weight: 700; }
     .waiting .value { color: var(--muted); }
+    .tagrow { display: flex; align-items: center; gap: clamp(1rem, 4vw, 3.5rem); justify-content: center; flex-wrap: wrap; }
+    .tagname { font-size: clamp(1rem, 2.4vw, 1.6rem); font-weight: 800; min-width: 4.5em; text-align: right; }
+    #coords.multi { flex-direction: column; gap: 10px; }
+    #coords.multi .value { font-size: clamp(3rem, 8.5vw, 6.5rem); }
+    #coords.many { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 6px 24px; }
+    #coords.many .value { font-size: clamp(2.2rem, 5vw, 3.8rem); }
+    #coords.many .axis { font-size: clamp(1.1rem, 2.2vw, 1.6rem); }
+    #coords.many .feet { font-size: clamp(.9rem, 1.6vw, 1.15rem); }
+    #coords.many .tagname { font-size: clamp(.95rem, 1.8vw, 1.2rem); min-width: 3.8em; }
+    #between { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 10px; }
+    #between .pair { display: flex; align-items: center; gap: .45em; padding: .35em .8em; border-radius: 999px;
+      background: #16213a; border: 1px solid #6f86b8; font-variant-numeric: tabular-nums; }
+    #between .pair b { font-size: 1.15rem; }
+    #between .pair.stale { opacity: .5; }
+    #between .swatch { width: .7em; height: .7em; border-radius: 50%; display: inline-block; }
     #detail { color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; min-height: 1.4em; }
     #detail b { color: var(--text); }
     #alerts { text-align: center; margin-top: 6px; line-height: 1.5; }
@@ -43,12 +58,12 @@
     svg { width: 100%; max-width: 1000px; flex: 1; min-height: 300px; max-height: 55vh; }
     .edge { stroke-linecap: round; }
     .edge.tag { stroke: #4d8a7b; stroke-width: 3; }
-    .edge.base { stroke: #3a4f49; stroke-width: 1.5; stroke-dasharray: 2 6; }
     .edge.stale { stroke: var(--line); stroke-dasharray: 6 8; }
+    .edge.between { stroke: #d9e6ff; stroke-width: 2.5; stroke-dasharray: 10 6; }
+    .label-bg.between { fill: #16213a; stroke: #6f86b8; }
     .label-bg { fill: #0b1916; stroke: var(--line); }
     .label { fill: var(--text); font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums;
       text-anchor: middle; dominant-baseline: central; }
-    .label.base { fill: var(--muted); font-size: 14px; font-weight: 500; }
     .node-name { fill: var(--muted); font-size: 15px; text-anchor: middle; }
     .grid { stroke: #1d332e; stroke-width: 1; }
     .grid.axis { stroke: #2f4f47; stroke-width: 1.5; }
@@ -80,16 +95,14 @@
   <header>
     <div class="pill" id="online"></div>
     <div class="controls">
-      <label class="pill"><input type="checkbox" id="showBase" checked> Anchor distances</label>
+      <label class="pill"><input type="checkbox" id="showAnchorLines"> Tag–anchor distances</label>
       <button class="pill" id="toggleLayout">Anchor positions</button>
       <a class="pill" href="/calibrate">Calibrate</a>
     </div>
   </header>
   <main>
-    <div id="coords" class="waiting">
-      <div class="coord"><span class="axis">X</span><span class="value" id="x">–</span><span class="feet" id="xFt"></span></div>
-      <div class="coord"><span class="axis">Y</span><span class="value" id="y">–</span><span class="feet" id="yFt"></span></div>
-    </div>
+    <div id="coords"></div>
+    <div id="between"></div>
     <div id="detail">Waiting for ranges…</div>
     <div id="alerts" role="status"></div>
 
@@ -134,9 +147,14 @@
   </main>
   <script src="/correction.js"></script>
   <script>
-    // Node ids from the firmware: 1 = Anchor 1 (Wi-Fi), 2 = Tag, 3..5 = Anchors 2..4.
-    const TAG = 2;
-    const NAMES = {1: 'Anchor 1', 2: 'Tag', 3: 'Anchor 2', 4: 'Anchor 3', 5: 'Anchor 4'};
+    // Node ids from the firmware: 1 = Anchor 1 (Wi-Fi), 2 = Tag 1, 3..5 = Anchors 2..4,
+    // 6 and up = Tags 2, 3, ... (tag N is node N + 4).
+    const isTag = id => Number(id) === 2 || Number(id) >= 6;
+    const tagNumber = id => Number(id) === 2 ? 1 : Number(id) - 4;
+    const NAMES = new Proxy({1: 'Anchor 1', 3: 'Anchor 2', 4: 'Anchor 3', 5: 'Anchor 4'},
+      {get: (names, id) => names[id] || (isTag(id) ? 'Tag ' + tagNumber(id) : 'Node ' + id)});
+    const TAG_PALETTE = ['#78e7c4', '#ff8fa3', '#8fb6ff', '#ffd36e', '#c49bff', '#7fe3ff', '#ffab7a', '#b5f07a'];
+    const TAG_COLORS = new Proxy({}, {get: (_, id) => TAG_PALETTE[(tagNumber(id) - 1) % TAG_PALETTE.length]});
     const ANCHOR_COLORS = {1: '#f2c46d', 3: '#f5a35c', 4: '#e58fd0', 5: '#9db8ff'};
     const SVG = 'http://www.w3.org/2000/svg';
     const FT = 30.48;
@@ -172,9 +190,6 @@
       setTimeout(refreshStores, 5000);
     })();
 
-    const showBase = $('showBase');
-    try { showBase.checked = localStorage.getItem('showBase') !== 'false'; } catch (_) {}
-    showBase.onchange = () => { try { localStorage.setItem('showBase', showBase.checked); } catch (_) {} };
 
     // Anchor layout from anchor-anchor distances: trilaterate from the first two,
     // refine against every distance, then Anchor 1 at the origin, Anchor 2 on +x,
@@ -296,21 +311,21 @@
       return e;
     }
 
-    function smooth(view, tagView) {
-      const target = {...view};
-      if (tagView) target[TAG] = tagView;
+    function smooth(view, tagViews) {
+      const target = {...view, ...tagViews};
       for (const [id, p] of Object.entries(target)) {
-        const rate = Number(id) === TAG ? 0.35 : 0.15;
+        const rate = isTag(id) ? 0.35 : 0.15;
         shown[id] = shown[id] ? shown[id].map((v, k) => v + ((p[k] || 0) - v) * rate) : [p[0], p[1], p[2] || 0];
       }
       for (const id of Object.keys(shown)) if (!target[id]) delete shown[id];
     }
 
-    let gridToView = null, tagGrid = null;
+    let gridToView = null;
+    const tagGrids = {};  // Smoothed grid position per tag.
     const CORNERS = [1, 3, 4, 5];  // Anchor 1 top-left, then clockwise.
 
     function describeShape() {
-      const ids = CORNERS.filter(id => shown[id] && id !== TAG);
+      const ids = CORNERS.filter(id => shown[id]);
       if (ids.length < 3) return '';
       const side = (a, b) => dist(shown[a], shown[b]) * FT;
       const source = layout ? 'tape-measured' : 'from UWB';
@@ -350,10 +365,23 @@
       }
       for (const e of edges) {
         if (e.base || e.valid || !onlineNow[e.a] || !onlineNow[e.b]) continue;
-        const other = e.a === TAG ? e.b : e.a;
-        lines.push('<div class="link">Tag ↔ ' + NAMES[other] + ': no reading (both online; check line of sight).</div>');
+        const tag = isTag(e.a) ? e.a : e.b, other = tag === e.a ? e.b : e.a;
+        lines.push('<div class="link">' + NAMES[tag] + ' ↔ ' + NAMES[other] + ': no reading (both online; check line of sight).</div>');
       }
       $('alerts').innerHTML = lines.join('');
+    }
+
+    // Tag-to-anchor labels are optional (they crowd the map with several tags).
+    const showAnchorLines = $('showAnchorLines');
+    try { showAnchorLines.checked = localStorage.getItem('showAnchorLines') === 'true'; } catch (_) {}
+    showAnchorLines.onchange = () => { try { localStorage.setItem('showAnchorLines', showAnchorLines.checked); } catch (_) {} };
+
+    // Directly measured distance between every pair of tags, as a list.
+    function renderBetween(edges) {
+      const pairs = edges.filter(e => isTag(e.a) && isTag(e.b));
+      const swatch = id => '<i class="swatch" style="background:' + TAG_COLORS[id] + '"></i>';
+      $('between').innerHTML = pairs.map(e => '<span class="pair' + (e.valid ? '' : ' stale') + '">' +
+        swatch(e.a) + NAMES[e.a] + ' ↔ ' + swatch(e.b) + NAMES[e.b] + ' <b>' + (e.valid ? ft(e.cm) : '–') + '</b></span>').join('');
     }
 
     function draw(edges) {
@@ -395,39 +423,30 @@
           text.textContent = ft(saved || dist(shown[a], shown[b]) * FT);
         });
       }
-      const perimeter = new Set(outlined ? corners.map((a, i) => key(a, corners[(i + 1) % corners.length])) : []);
-
+      // Tag-to-anchor lines only; the anchors' shape is the outline above.
       for (const e of edges) {
-        if (!shown[e.a] || !shown[e.b] || (e.base && (!showBase.checked || perimeter.has(key(e.a, e.b))))) continue;
+        if (e.base || !shown[e.a] || !shown[e.b]) continue;
         const [x1, y1] = screen(e.a), [x2, y2] = screen(e.b);
+        // Tag-to-tag: the UWB distance measured directly between the two tags.
+        const between = isTag(e.a) && isTag(e.b);
+        const tagColor = TAG_COLORS[isTag(e.a) ? e.a : e.b];
         element($('edges'), 'line', {x1, y1, x2, y2,
-          class: 'edge ' + (e.base ? 'base' : 'tag') + (e.valid ? '' : ' stale')});
-        // Anchor-to-anchor labels sit just off their line, away from the tag.
-        const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-        let nx = 0, ny = 0;
-        if (e.base) {
-          const length = Math.hypot(x2 - x1, y2 - y1) || 1;
-          nx = -(y2 - y1) / length; ny = (x2 - x1) / length;
-          const [rx, ry] = shown[TAG] ? screen(TAG) : [500, 310];
-          if (nx * (mx - rx) + ny * (my - ry) < 0) { nx = -nx; ny = -ny; }
-          nx *= 14; ny *= 14;
-        }
-        const g = element($('labels'), 'g', {transform: 'translate(' + (mx + nx) + ' ' + (my + ny) + ')'});
-        const bg = element(g, 'rect', {class: 'label-bg', rx: 9, height: 32, y: -16});
-        const text = element(g, 'text', {class: 'label' + (e.base ? ' base' : '')});
+          class: 'edge ' + (between ? 'between' : 'tag') + (e.valid ? '' : ' stale'),
+          style: e.valid && !between ? 'stroke:' + tagColor + ';stroke-opacity:.55' : ''});
+        if (!between && !showAnchorLines.checked) continue;
+        const g = element($('labels'), 'g', {transform: 'translate(' + (x1 + x2) / 2 + ' ' + (y1 + y2) / 2 + ')'});
+        const bg = element(g, 'rect', {class: 'label-bg' + (between ? ' between' : ''), rx: 9, height: 32, y: -16});
+        const text = element(g, 'text', {class: 'label'});
         text.textContent = e.valid ? ft(e.cm) : '–';
-        if (e.base) bg.remove();
-        else {
-          const width = text.getComputedTextLength() + 18;
-          bg.setAttribute('width', width); bg.setAttribute('x', -width / 2);
-        }
+        const width = text.getComputedTextLength() + 18;
+        bg.setAttribute('width', width); bg.setAttribute('x', -width / 2);
       }
       for (const id of ids) {
         const [x, y] = screen(id);
         const g = element($('nodes'), 'g', {transform: 'translate(' + x + ' ' + y + ')'});
         const off = onlineNow[id] === false;
         if (off) element(g, 'circle', {r: 22, fill: 'none', stroke: 'var(--bad)', 'stroke-width': 3});
-        if (id === TAG) element(g, 'circle', {r: 14, fill: 'var(--tag)', opacity: off ? 0.4 : 1});
+        if (isTag(id)) element(g, 'circle', {r: 14, fill: TAG_COLORS[id], opacity: off ? 0.4 : 1});
         else element(g, 'rect', {x: -12, y: -12, width: 24, height: 24, rx: 5, fill: ANCHOR_COLORS[id], opacity: off ? 0.4 : 1});
         element(g, 'text', {class: 'node-name' + (off ? ' off' : ''), y: 38}).textContent = NAMES[id] + (off ? ' · OFFLINE' : '');
       }
@@ -581,13 +600,14 @@
 
         $('online').innerHTML = data.nodes.map(n => '<span><i class="dot' + (n.online ? ' up' : '') +
           '"></i>' + NAMES[n.id] + '</span>').join('');
-        anchorIds = data.nodes.map(n => n.id).filter(id => id !== TAG);
+        anchorIds = data.nodes.map(n => n.id).filter(id => !isTag(id));
+        const tagIds = data.nodes.map(n => n.id).filter(isTag);
         onlineNow = Object.fromEntries(data.nodes.map(n => [n.id, n.online]));
 
         const now = Date.now(), edges = [];
         for (const pair of data.pairs) {
           const cm = correctDistance(correction, pair.cm, data.antenna_delay);
-          const k = key(pair.a, pair.b), base = pair.a !== TAG && pair.b !== TAG;
+          const k = key(pair.a, pair.b), base = !isTag(pair.a) && !isTag(pair.b);
           if (base) {
             const s = anchorSamples[k] ||= {sequence: -1, values: [], at: 0};
             if (pair.valid && pair.sequence !== s.sequence) {
@@ -608,43 +628,54 @@
         const pos = layout || liveLayout;
         if (!pos) { $('detail').textContent = 'Waiting for the Anchor 1 – Anchor 2 distance…'; return; }
 
-        const ranges = {};
-        for (const e of edges) if (!e.base && e.valid) ranges[e.a === TAG ? e.b : e.a] = e.cm;
-        const tag = locateTag(pos, ranges);
         // View in grid units when the anchors fit the frame; otherwise in feet.
         const affine = fitAffine(pos, frame);
         const toView = affine ? realView(affine) : p => [p[0] / FT, p[1] / FT];
         gridToView = affine ? g => toView(affine.inverse(g)) : null;
         const view = {};
         for (const id of Object.keys(pos)) view[id] = toView(pos[id]);
-        const tagView = tag && toView(tag.point);
-        smooth(view, tagView);
-        if (tag && affine) {
-          const g = affine.map(tag.point);
-          tagGrid = tagGrid ? tagGrid.map((v, k) => v + (g[k] - v) * 0.35) : g;
+
+        // Each tag is located on its own from its distances to the anchors.
+        const fits = {}, tagViews = {};
+        for (const t of tagIds) {
+          const ranges = {};
+          for (const e of edges) if (!e.base && e.valid && (e.a === t || e.b === t)) ranges[e.a === t ? e.b : e.a] = e.cm;
+          const fit = locateTag(pos, ranges);
+          if (!fit) { delete tagGrids[t]; continue; }
+          fits[t] = fit;
+          tagViews[t] = toView(fit.point);
+          if (affine) {
+            const g = affine.map(fit.point);
+            tagGrids[t] = tagGrids[t] ? tagGrids[t].map((v, k) => v + (g[k] - v) * 0.35) : g;
+          }
         }
+        smooth(view, tagViews);
         draw(edges);
         $('shape').innerHTML = describeShape();
-        if (!tag) {
-          $('coords').classList.add('waiting'); $('x').textContent = '–'; $('y').textContent = '–';
-          $('detail').textContent = 'The tag needs distances to at least two anchors.';
-          return;
-        }
-        const [x, y] = affine && tagGrid ? tagGrid : shown[TAG];
-        $('coords').classList.remove('waiting');
-        $('x').textContent = fixed(x);
-        $('y').textContent = fixed(y);
-        // Grid units, with the same position in feet (grid value × that axis's grid step).
-        $('xFt').textContent = affine ? ft(x * affine.unitCm[0]) : 'ft';
-        $('yFt').textContent = affine ? ft(y * affine.unitCm[1]) : 'ft';
-        $('detail').innerHTML = 'Fit to ' + tag.count + ' anchors, ±' +
-          tag.rms.toFixed(0) + ' cm · anchors: ' + (layout ? 'saved positions' : 'live measurement') +
+
+        // Big X/Y: one row per tag, in grid units with feet underneath.
+        $('coords').className = tagIds.length > 2 ? 'many' : tagIds.length > 1 ? 'multi' : '';
+        renderBetween(edges);
+        $('coords').innerHTML = tagIds.map(t => {
+          const fit = fits[t];
+          const [x, y] = fit ? (affine && tagGrids[t] ? tagGrids[t] : shown[t]) : [null, null];
+          const cell = (axis, v, unitCm) => '<div class="coord"><span class="axis">' + axis + '</span><span class="value">' +
+            (v === null ? '–' : fixed(v)) + '</span><span class="feet">' +
+            (v === null ? '' : affine ? ft(v * unitCm) : 'ft') + '</span></div>';
+          return '<div class="tagrow' + (fit ? '' : ' waiting') + '">' +
+            (tagIds.length > 1 ? '<div class="tagname" style="color:' + TAG_COLORS[t] + '">' + NAMES[t] + '</div>' : '') +
+            cell('X', x, affine && affine.unitCm[0]) + cell('Y', y, affine && affine.unitCm[1]) + '</div>';
+        }).join('');
+
+        const fitText = tagIds.map(t => fits[t] ? NAMES[t] + ' fit to ' + fits[t].count + ' anchors, ±' + fits[t].rms.toFixed(0) + ' cm' +
+          (fits[t].count < 3 ? ' <span class="warn">(may be mirrored)</span>' : '') :
+          NAMES[t] + ': <span class="warn">needs distances to at least two anchors</span>').join(' · ');
+        $('detail').innerHTML = fitText + ' · anchors: ' + (layout ? 'saved positions' : 'live measurement') +
           (affine ? ' · 1 grid unit = ' + ft(affine.unitCm[0]) + ' × ' + ft(affine.unitCm[1]) +
-            ' · grid fit ±' + affine.rms.toFixed(2) : ' · <span class="warn">grid needs 3 anchors not in a line</span>') +
-          (tag.count < 3 ? ' <span class="warn">(2 anchors: may be mirrored)</span>' : '');
+            ' · grid fit ±' + affine.rms.toFixed(2) : ' · <span class="warn">grid needs 3 anchors not in a line</span>');
       } catch (_) {
         $('online').querySelectorAll('.dot').forEach(dot => dot.classList.remove('up'));
-        $('coords').classList.add('waiting');
+        $('coords').querySelectorAll('.tagrow').forEach(row => row.classList.add('waiting'));
         $('detail').textContent = '';
         $('alerts').innerHTML = '<div class="off">⚠ Anchor 1 is offline – the laptop cannot reach it over Wi-Fi, ' +
           'so the other boards cannot be checked. Check its power and the Wi-Fi.</div>';
