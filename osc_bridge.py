@@ -152,6 +152,7 @@ class Bridge:
         self.last_point = {}
         self.known_tags = set()   # Tag node ids reported by anchor 1.
         self.sent = {}
+        self.last_sent = {}  # tag node -> time of its last message
         self.layout_mtime = None
         self.load_layout()
 
@@ -198,6 +199,12 @@ class Bridge:
             if is_tag(tag):
                 self.send(tag, now)
 
+    def heartbeat(self, now):
+        """A tag with no new ranges (offline) still reports, with "N/A" values."""
+        for tag in self.known_tags:
+            if now - self.last_sent.get(tag, 0) >= 0.5:
+                self.send(tag, now)
+
     def send(self, tag, now):
         if self.geometry is None:
             self.update_geometry()
@@ -231,6 +238,7 @@ class Bridge:
         text = json.dumps(message, separators=(', ', ': '))
         self.osc.sendto(osc_message(f'/tag{me}', text), (self.args.osc_host, self.args.osc_port + me - 1))
         self.sent[me] = self.sent.get(me, 0) + 1
+        self.last_sent[tag] = now
 
 
 def subscribe(args, stop, bridge):
@@ -263,7 +271,7 @@ def main():
     bridge = Bridge(args)
     listener = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     listener.bind(('0.0.0.0', args.listen_port))
-    listener.settimeout(1)
+    listener.settimeout(0.1)
     stop = threading.Event()
     threading.Thread(target=subscribe, args=(args, stop, bridge), daemon=True).start()
     print(f'OSC out: /tagN -> {args.osc_host}:{args.osc_port}+N-1 · listening for anchor 1 on UDP {args.listen_port}'
@@ -283,6 +291,7 @@ def main():
                         bridge.on_range(int(parts[1]), int(parts[2]), float(parts[3]), float(parts[4]), now)
                     except ValueError:
                         pass
+            bridge.heartbeat(now)
             if now - last_report >= 5:
                 bridge.load_layout()
                 rates = ', '.join(f'/tag{t} {n / (now - last_report):.0f}/s' for t, n in sorted(bridge.sent.items()))

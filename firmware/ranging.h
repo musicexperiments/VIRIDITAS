@@ -141,7 +141,7 @@ static void buildPairs() {
   for (int32_t &delay : nodeDelay) delay = -1;
 }
 
-static uint8_t nextScheduledPair() {
+static uint8_t nextPairInCycle() {
   if (cycleSlot < tagPairCount) return cycleSlot++;
   cycleSlot = 0;
   const uint8_t pair = tagPairCount + nextAnchorPair;
@@ -167,6 +167,26 @@ static bool wifiRestartPending = false;
 static bool pairValid(const Pair &pair) { return pair.at != 0 && millis() - pair.at < 2000; }
 static bool nodeOnline(uint8_t node) {
   return node == NODE_ID || (lastHeard[node] != 0 && millis() - lastHeard[node] < 2000);
+}
+
+// Skip pairs with a board that has gone quiet, so an offline tag or anchor does
+// not slow everyone else down; probe it once a second so it rejoins quickly.
+static const uint32_t PROBE_MS = 1000;
+static uint32_t lastProbe[NODE_COUNT + 1] = {};
+
+static int nextScheduledPair() {
+  for (uint8_t tries = 0; tries <= PAIR_COUNT; ++tries) {
+    const uint8_t index = nextPairInCycle();
+    const Pair &pair = pairs[index];
+    bool ok = true;
+    for (uint8_t node : {pair.a, pair.b})
+      if (!nodeOnline(node) && millis() - lastProbe[node] < PROBE_MS) ok = false;
+    if (!ok) continue;
+    for (uint8_t node : {pair.a, pair.b})
+      if (!nodeOnline(node)) lastProbe[node] = millis();
+    return index;
+  }
+  return -1;
 }
 
 static Pair *findPair(uint8_t a, uint8_t b) {
@@ -533,11 +553,13 @@ void loop() {
   if (state == IDLE) serviceWifi();
   if (state == IDLE && millis() - lastSlotAt >= SLOT_MS) {
     lastSlotAt = millis();
-    currentPair = nextScheduledPair();
+    const int scheduled = nextScheduledPair();
+    if (scheduled < 0) return;  // Everyone else is offline; wait for the next probe.
+    currentPair = scheduled;
     Pair &pair = pairs[currentPair];
     if (pair.a == NODE_ID) {
       // Repeat an update request for a few seconds so one missed poll does not lose it.
-      const bool update = updateNode == pair.b && millis() - updateRequestedAt < 3000;
+      const bool update = updateNode == pair.b && millis() - updateRequestedAt < 5000;
       startExchange(pair.b, update ? COMMAND_UPDATE : 0);
     } else {
       pair.reversed = !pair.reversed;

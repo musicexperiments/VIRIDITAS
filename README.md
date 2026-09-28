@@ -73,7 +73,9 @@ and its own color on the map. The directly measured distance between each
 pair of tags is listed under the coordinates and drawn as a labelled dashed
 line. N tags give N×(N−1)/2 such pairs. Tag-to-anchor lines are drawn
 unlabelled; **Tag–anchor distances** shows their numbers. Tags held within a few centimetres of each other can fail to range,
-because the signal is too strong at that distance. For a pair that does not include Anchor 1, it
+because the signal is too strong at that distance. A board not heard from
+for 2 s (a tag switched off, for example) is skipped, so the others keep
+their rate. It is probed once a second and rejoins on its own. For a pair that does not include Anchor 1, it
 asks one of the two boards to range the other and relay the result, and the
 two boards take turns starting. `/api/ranges` returns every pair.
 
@@ -130,7 +132,9 @@ message, about 20 per second per tag with four tags. The message goes to
 - `dNK`: the directly measured distance from tag N to tag K, divided by the
   farthest distance in the anchor shape (1 = as far apart as the shape
   allows).
-- `"N/A"`: no reading in the last second.
+- `"N/A"`: no reading in the last second. A tag that goes offline keeps
+  sending twice a second with every value `"N/A"`, so a receiver never holds
+  a stale position.
 
 Positions use each newest reading, unsmoothed, for the least latency.
 `--smooth` uses the 5-reading median instead: steadier, with about 0.5 s more
