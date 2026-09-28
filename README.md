@@ -114,15 +114,15 @@ because they set the baseline. Every board uses the same antenna delay
 as OSC, straight from Anchor 1 (the website is not involved):
 
 ```sh
-python3 osc_bridge.py                 # /tagN -> 127.0.0.1:9000+N
-python3 osc_monitor.py 9001           # print what /tag1 receives
+python3 osc_bridge.py                 # /tagN -> 127.0.0.1:8999+N (/tag1 on 9000)
+python3 osc_monitor.py 9000           # print what /tag1 receives
 ```
 
 Anchor 1 pushes every new range to the bridge over UDP the moment it is
 measured, with no polling. The bridge subscribes with `POST /api/stream`,
 renewed every 5 s. Each range that involves a tag immediately produces one
 message, about 20 per second per tag with four tags. The message goes to
-`/tagN` on port 9000 + N, with one JSON string argument:
+`/tagN` on port 8999 + N (`/tag1` on 9000), with one JSON string argument:
 
 ```
 {"x": 0.62, "y": 0.41, "d12": 0.33, "d13": 0.58, "d14": "N/A"}
@@ -132,14 +132,53 @@ message, about 20 per second per tag with four tags. The message goes to
 - `dNK`: the directly measured distance from tag N to tag K, divided by the
   farthest distance in the anchor shape (1 = as far apart as the shape
   allows).
-- `"N/A"`: no reading in the last second. A tag that goes offline keeps
-  sending twice a second with every value `"N/A"`, so a receiver never holds
-  a stale position.
+- `"N/A"`: no reading in the last second. Every key is always present;
+  unavailable values are `"N/A"`, never omitted.
+
+Every tag's port stays open. `/tag1` to `/tag4` (`--tags N` for more) always
+send at least twice a second, even when that tag is offline, anchor 1 is
+unreachable, or no layout is saved. In those cases every value is `"N/A"`, so
+a receiver never holds a stale position.
 
 Positions use each newest reading, unsmoothed, for the least latency.
 `--smooth` uses the 5-reading median instead: steadier, with about 0.5 s more
 lag. `--osc-host` and `--osc-port` change the destination. The anchor layout
 comes from `web/layout.json`, as saved under **Anchor positions**.
+
+## Simulator
+
+`simulate.py` produces the same OSC as `osc_bridge.py` with no hardware, so
+software can be written and tested against realistic data. It is a single,
+self-contained file (Python 3 standard library only), so it can be sent to
+someone on its own:
+
+```sh
+python3 simulate.py     # menu: shape (square or rectangle), size in feet, number of people
+```
+
+People wander with curiosity. Each picks something to look at: an open spot
+away from the walls, another person, or somewhere visited before. They weave
+toward it along a curving path at a browsing or purposeful pace (about 0.8
+m/s on average, up to 1.4 m/s), linger and look around for a moment, then
+move on. They always stay inside the shape. `/tag1` goes to port 9000, `/tag2` to 9001, and so on, on
+127.0.0.1. The JSON, normalisation and `"N/A"` rules are the same as the
+real bridge's.
+
+- `/tag1` to `/tag4` always send, even with fewer people. A tag with nobody
+  sends every key as `"N/A"`.
+- The data behaves like the hardware: a few centimetres of noise, occasional
+  missing tag-to-tag readings, and `"N/A"` when two people are within a few
+  inches.
+- The people you choose stay online the whole time.
+
+On start the simulator stops `osc_bridge.py` and anything else using its
+ports. On macOS it then opens one Terminal window per port, showing what
+that path receives. Elsewhere, run `python3 simulate.py --monitor 9000` and
+so on yourself. The main window draws the shape (Anchor 1 top-left,
+clockwise), the people with trails, and the values being sent. Keys: space
+pauses, m returns to the menu, q quits and closes only the port windows it
+opened. Start your own receiving software after the simulator, or close the
+port windows first.
 
 ## Update over Wi-Fi
 

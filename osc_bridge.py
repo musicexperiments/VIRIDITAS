@@ -5,13 +5,15 @@ as the ranges arrive.
 Anchor 1 pushes every new range to this program over UDP (no polling). For each
 range that involves a tag, the tag is re-located and one OSC message goes out:
 
-  /tag1 -> port 9001, /tag2 -> 9002, ... (tag N on base port + N - 1)
+  /tag1 -> port 9000, /tag2 -> 9001, ... (tag N on base port + N - 1)
   argument: a JSON string {"x": .., "y": .., "d12": .., "d13": .., ...}
 
 x and y run 0 to 1 across the anchors' grid (0 = left/bottom, 1 = right/top).
 dNK is the directly measured distance from tag N to tag K, divided by the
 farthest distance in the anchor shape (so 1 = as far apart as the shape allows).
-A value that has not been read (no fresh range) is the string "N/A".
+A value that has not been read (no fresh range) is the string "N/A". Every
+tag's port keeps sending, twice a second at least, with every key present, even
+when that tag, anchor 1 or the anchor layout is unavailable.
 """
 import argparse
 import json
@@ -150,7 +152,10 @@ class Bridge:
         self.ranges = {}         # (a, b) -> (cm, time)
         self.anchor_history = {}  # (a, b) -> recent cm, for the fallback layout
         self.last_point = {}
-        self.known_tags = set()   # Tag node ids reported by anchor 1.
+        # Tags that always get messages: --tags N means /tag1 to /tagN, plus any
+        # further tags anchor 1 reports.
+        self.configured_tags = {2} | set(range(6, args.tags + 5))
+        self.known_tags = set(self.configured_tags)
         self.sent = {}
         self.last_sent = {}  # tag node -> time of its last message
         self.layout_mtime = None
@@ -201,17 +206,17 @@ class Bridge:
 
     def heartbeat(self, now):
         """A tag with no new ranges (offline) still reports, with "N/A" values."""
-        for tag in self.known_tags:
+        for tag in self.known_tags | self.configured_tags:
             if now - self.last_sent.get(tag, 0) >= 0.5:
                 self.send(tag, now)
 
     def send(self, tag, now):
         if self.geometry is None:
             self.update_geometry()
-        if self.geometry is None:
-            return
-        pos, mapper, span = self.geometry
-        fresh = lambda k: k in self.ranges and now - self.ranges[k][1] < FRESH_S
+        # Without a layout (no saved anchors, anchor 1 unreachable) everything is N/A,
+        # but the message still goes out with every key.
+        pos, mapper, span = self.geometry or ({}, None, 0)
+        fresh = lambda k: k in self.ranges and now - self.ranges[k][1] < FRESH_S and span
         anchor_ranges = {}
         for anchor in pos:
             k = (min(tag, anchor), max(tag, anchor))
@@ -231,7 +236,7 @@ class Bridge:
             message['y'] = round(clamp((gy - y0) / (y1 - y0)), 4)
         me = tag_number(tag)
         seen = {n for pair in self.ranges for n in pair if is_tag(n)}
-        others = sorted((seen | self.known_tags) - {tag}, key=tag_number)
+        others = sorted((seen | self.known_tags | self.configured_tags) - {tag}, key=tag_number)
         for other in others:
             k = (min(tag, other), max(tag, other))
             message[f'd{me}{tag_number(other)}'] = round(min(1.0, self.ranges[k][0] / span), 4) if fresh(k) else MISSING
@@ -252,7 +257,7 @@ def subscribe(args, stop, bridge):
             request = urllib.request.Request(f'http://{host}/api/stream?port={args.listen_port}', data=b'')
             urllib.request.urlopen(request, timeout=3).read()
             with urllib.request.urlopen(f'http://{host}/api/ranges', timeout=3) as response:
-                bridge.known_tags = {n['id'] for n in json.load(response)['nodes'] if is_tag(n['id'])}
+                bridge.known_tags = bridge.configured_tags | {n['id'] for n in json.load(response)['nodes'] if is_tag(n['id'])}
         except OSError as error:
             print(f'Could not subscribe to anchor 1 ({error}); retrying', flush=True)
             host = args.anchor
@@ -264,7 +269,8 @@ def main():
     parser.add_argument('--anchor', default='10.10.10.183', help='anchor 1 IP or hostname')
     parser.add_argument('--listen-port', type=int, default=4210, help='UDP port anchor 1 streams to')
     parser.add_argument('--osc-host', default='127.0.0.1')
-    parser.add_argument('--osc-port', type=int, default=9001, help='port for /tag1; tag N uses this + N - 1')
+    parser.add_argument('--osc-port', type=int, default=9000, help='port for /tag1; tag N uses this + N - 1')
+    parser.add_argument('--tags', type=int, default=4, help='always send /tag1 to /tagN (default 4)')
     parser.add_argument('--smooth', action='store_true', help='use the 5-reading median (steadier, ~0.5 s more lag)')
     args = parser.parse_args()
 
