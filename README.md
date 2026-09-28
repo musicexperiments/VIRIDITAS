@@ -67,9 +67,12 @@ feet shown are distances from the center. The grid
 values are editable under **Anchor positions**. A least-squares affine fit
 maps the real anchor positions onto the grid, so the square's physical size
 does not matter. Anchor 1 is the origin and Anchor 2 lies on the +x axis.
-The anchors are assumed to sit on the floor. Under **Anchor positions**, enter
-the tape-measured distance between each pair of anchors: all four sides and
-both diagonals, or at least five. The page builds the real shape (square,
+The anchors are assumed to sit on the floor. Under **Anchor positions**,
+choose **Rectangle or square** and enter only the tape-measured width
+(Anchor 1 to Anchor 2) and height (Anchor 2 to Anchor 3). The other sides and
+the diagonals follow from those. For any other layout, choose **Other shape**
+and enter the distance between each pair of anchors: all four sides and both
+diagonals, or at least five. The page builds the real shape (square,
 rectangle or any other), maps it onto the grid corners and saves it to
 `web/layout.json`. It warns if the distances do not fit together. With no
 distances saved, it falls back to a live median of the UWB anchor-to-anchor

@@ -96,10 +96,26 @@
     <section id="layoutPanel" hidden>
       <h2>Anchor setup</h2>
       <p class="hint" id="layoutState"></p>
-      <h3>1. Tape-measured distance between each pair of anchors (feet)</h3>
-      <table id="distanceTable"></table>
-      <p class="hint">Measure all four sides and both diagonals if you can; at least five are needed to fix the
-        shape. Any shape works (square, rectangle, …). The UWB column is only for comparison.</p>
+      <h3>1. Shape of the anchors (tape-measured, feet)</h3>
+      <div class="buttons" style="margin-top:8px">
+        <label><input type="radio" name="shapeMode" value="rectangle" checked> Rectangle or square</label>
+        <label><input type="radio" name="shapeMode" value="other"> Other shape</label>
+      </div>
+      <div id="rectangleInputs">
+        <table>
+          <tr><td></td><td>Tape (ft)</td><td class="uwb">UWB reads</td></tr>
+          <tr><td>Width: Anchor 1 → Anchor 2 (top)</td><td><input id="rectWidth" type="number" min="0" step="0.01"></td>
+            <td class="uwb" id="rectWidthUwb">–</td></tr>
+          <tr><td>Height: Anchor 2 → Anchor 3 (right)</td><td><input id="rectHeight" type="number" min="0" step="0.01"></td>
+            <td class="uwb" id="rectHeightUwb">–</td></tr>
+        </table>
+        <p class="hint">Anchor 1 top-left, then clockwise. The other sides and the diagonals follow from these two.</p>
+      </div>
+      <div id="otherInputs" hidden>
+        <table id="distanceTable"></table>
+        <p class="hint">Measure all four sides and both diagonals if you can; at least five are needed to fix the
+          shape. The UWB column is only for comparison.</p>
+      </div>
       <h3>2. Grid corner each anchor stands for</h3>
       <table id="gridTable"></table>
       <p class="hint">The tag's X/Y are reported in these grid units: the measured shape is mapped onto them, so a
@@ -406,6 +422,18 @@
     }
 
     const anchorPairs = () => anchorIds.flatMap(a => anchorIds.filter(b => b > a).map(b => [a, b]));
+    // Corners clockwise from top-left: Anchor 1..4 are nodes 1, 3, 4, 5.
+    const CLOCKWISE = [1, 3, 4, 5];
+    const shapeMode = () => document.querySelector('input[name="shapeMode"]:checked').value;
+    function rectangleDistances(width, height) {
+      const [a1, a2, a3, a4] = CLOCKWISE, diagonal = Math.hypot(width, height);
+      return {[key(a1, a2)]: width, [key(a3, a4)]: width, [key(a2, a3)]: height, [key(a4, a1)]: height,
+              [key(a1, a3)]: diagonal, [key(a2, a4)]: diagonal};
+    }
+    for (const radio of document.querySelectorAll('input[name="shapeMode"]')) radio.onchange = () => {
+      $('rectangleInputs').hidden = shapeMode() !== 'rectangle';
+      $('otherInputs').hidden = shapeMode() === 'rectangle';
+    };
 
     $('toggleLayout').onclick = () => { $('layoutPanel').hidden = !$('layoutPanel').hidden; renderLayoutPanel(); };
     function renderLayoutPanel() {
@@ -414,6 +442,14 @@
       // Prefill from saved distances, or from saved positions if only those exist.
       const known = (a, b) => savedDistances && savedDistances[key(a, b)] ||
         (layout && layout[a] && layout[b] ? dist(layout[a], layout[b]) : null);
+      const uwbOf = (a, b) => { const live = anchorSamples[key(a, b)];
+        return live && live.values.length ? ft(median(live.values)) : '–'; };
+      const [a1, a2, a3] = CLOCKWISE;
+      const w = known(a1, a2), h = known(a2, a3);
+      if (document.activeElement !== $('rectWidth')) $('rectWidth').value = w ? (w / FT).toFixed(2) : '';
+      if (document.activeElement !== $('rectHeight')) $('rectHeight').value = h ? (h / FT).toFixed(2) : '';
+      $('rectWidthUwb').textContent = uwbOf(a1, a2);
+      $('rectHeightUwb').textContent = uwbOf(a2, a3);
       $('distanceTable').innerHTML = '<tr><td></td><td>Tape (ft)</td><td class="uwb">UWB reads</td></tr>' +
         anchorPairs().map(([a, b]) => {
           const value = known(a, b), live = anchorSamples[key(a, b)];
@@ -430,10 +466,21 @@
     }
 
     $('saveLayout').onclick = async () => {
-      const distances = {};
-      for (const input of $('distanceTable').querySelectorAll('input')) {
-        const value = parseFloat(input.value);
-        if (Number.isFinite(value) && value > 0) distances[input.dataset.pair] = value * FT;
+      let distances = {};
+      if (shapeMode() === 'rectangle') {
+        const width = parseFloat($('rectWidth').value), height = parseFloat($('rectHeight').value);
+        if (!(width > 0 && height > 0)) {
+          $('layoutMsg').innerHTML = '<span class="warn">Enter the width and height in feet.</span>'; return;
+        }
+        if (CLOCKWISE.some(id => !anchorIds.includes(id))) {
+          $('layoutMsg').innerHTML = '<span class="warn">Rectangle mode needs all four anchors.</span>'; return;
+        }
+        distances = rectangleDistances(width * FT, height * FT);
+      } else {
+        for (const input of $('distanceTable').querySelectorAll('input')) {
+          const value = parseFloat(input.value);
+          if (Number.isFinite(value) && value > 0) distances[input.dataset.pair] = value * FT;
+        }
       }
       const grid = {};
       for (const input of $('gridTable').querySelectorAll('input')) {
