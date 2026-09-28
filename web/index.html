@@ -53,6 +53,10 @@
     .grid { stroke: #1d332e; stroke-width: 1; }
     .grid.axis { stroke: #2f4f47; stroke-width: 1.5; }
     .grid-label { fill: #4e6b63; font-size: 12px; text-anchor: middle; }
+    .outline { stroke: #6b8f86; stroke-width: 2; fill: rgba(120, 231, 196, .04); stroke-linejoin: round; }
+    .label.side { fill: var(--text); font-size: 15px; font-weight: 700; }
+    #shape { color: var(--muted); text-align: center; font-size: .95rem; margin-top: 4px; }
+    #shape b { color: var(--text); }
 
     #layoutPanel { width: 100%; max-width: 640px; margin-top: 12px; background: var(--card);
       border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
@@ -92,6 +96,7 @@
     <svg id="plot" viewBox="0 0 1000 620" role="img" aria-label="Positions of the anchors and the tag">
       <g id="grid"></g><g id="edges"></g><g id="nodes"></g><g id="labels"></g>
     </svg>
+    <div id="shape"></div>
 
     <section id="layoutPanel" hidden>
       <h2>Anchor setup</h2>
@@ -267,7 +272,23 @@
       // Physical length of one grid step along x and y: columns of the inverse linear part.
       const l = cu[0] * cv[1] - cu[1] * cv[0];
       const unitCm = [Math.hypot(cv[1] / l, -cv[0] / l), Math.hypot(-cu[1] / l, cu[0] / l)];
-      return {map, rms, unitCm};
+      const inverse = g => { const x = g[0] - cu[2], y = g[1] - cv[2];
+        return [(cv[1] * x - cu[1] * y) / l, (-cv[0] * x + cu[0] * y) / l]; };
+      return {map, inverse, rms, unitCm};
+    }
+
+    // Real-shape view in feet: rotate/mirror the measured positions (no stretching)
+    // so the grid center is the origin and the grid's +x/+y point right/up.
+    function realView(affine) {
+      const o = affine.inverse([0, 0]), px = affine.inverse([1, 0]), py = affine.inverse([0, 1]);
+      let u = [px[0] - o[0], px[1] - o[1]];
+      const lu = Math.hypot(...u); u = u.map(v => v / lu);
+      let w = [py[0] - o[0], py[1] - o[1]];
+      const along = w[0] * u[0] + w[1] * u[1];
+      w = [w[0] - along * u[0], w[1] - along * u[1]];
+      const lw = Math.hypot(...w); w = w.map(v => v / lw);
+      return p => [((p[0] - o[0]) * u[0] + (p[1] - o[1]) * u[1]) / FT,
+                   ((p[0] - o[0]) * w[0] + (p[1] - o[1]) * w[1]) / FT];
     }
 
     function element(parent, tag, attrs) {
@@ -287,7 +308,26 @@
       for (const id of Object.keys(shown)) if (!target[id]) delete shown[id];
     }
 
-    let gridMode = false;
+    let gridToView = null, tagGrid = null;
+    const CORNERS = [1, 3, 4, 5];  // Anchor 1 top-left, then clockwise.
+
+    function describeShape() {
+      const ids = CORNERS.filter(id => shown[id] && id !== TAG);
+      if (ids.length < 3) return '';
+      const side = (a, b) => dist(shown[a], shown[b]) * FT;
+      const source = layout ? 'tape-measured' : 'from UWB';
+      if (ids.length === 4) {
+        const [a1, a2, a3, a4] = ids, w = side(a1, a2), h = side(a2, a3), w2 = side(a3, a4), h2 = side(a4, a1);
+        const close = (p, q) => Math.abs(p - q) <= 0.02 * Math.max(p, q);
+        if (close(w, w2) && close(h, h2) && close(side(a1, a3), side(a2, a4)))
+          return 'Anchors form a <b>' + (close(w, h) ? ft((w + h) / 2) + ' square' :
+            ft(w).replace(' ft', '') + ' × ' + ft(h) + ' rectangle') + '</b> (width × height, ' + source + ')';
+        return 'Anchors form a <b>4-sided shape</b>: sides ' + [w, h, w2, h2].map(v => ft(v).replace(' ft', '')).join(', ') +
+          ' ft, clockwise from Anchor 1 (' + source + ')';
+      }
+      return 'Anchors form a <b>triangle</b>: sides ' + ids.map((a, i) => ft(side(a, ids[(i + 1) % ids.length])).replace(' ft', '')).join(', ') +
+        ' ft (' + source + ')';
+    }
     // Name every offline board, and tag links that fail while both ends are up.
     function renderAlerts(nodes, edges) {
       const now = Date.now(), lines = [];
@@ -325,28 +365,42 @@
       const span = Math.max(maxX - minX, maxY - minY, 1e-3);
       const scale = Math.min(820 / Math.max(maxX - minX, span * 0.2), 470 / Math.max(maxY - minY, span * 0.2));
       const ox = 500 - (minX + maxX) / 2 * scale, oy = 310 + (minY + maxY) / 2 * scale;
-      const screen = id => [ox + shown[id][0] * scale, oy - shown[id][1] * scale];
+      const toScreen = p => [ox + p[0] * scale, oy - p[1] * scale];
+      const screen = id => toScreen(shown[id]);
       $('grid').replaceChildren(); $('edges').replaceChildren(); $('nodes').replaceChildren(); $('labels').replaceChildren();
-      if (gridMode) {
-        // Integer grid lines across the visible area.
-        const x0 = Math.floor((0 - ox) / scale), x1 = Math.ceil((1000 - ox) / scale);
-        const y0 = Math.floor((oy - 620) / scale), y1 = Math.ceil(oy / scale);
-        if (x1 - x0 < 60 && y1 - y0 < 60) {
-          for (let gx = x0; gx <= x1; gx++) {
-            const sx = ox + gx * scale;
-            element($('grid'), 'line', {x1: sx, y1: 0, x2: sx, y2: 620, class: 'grid' + (gx === 0 ? ' axis' : '')});
-            element($('grid'), 'text', {x: sx, y: 612, class: 'grid-label'}).textContent = gx;
+      const corners = CORNERS.filter(id => shown[id]);
+      const outlined = !!gridToView && corners.length >= 3;
+      if (gridToView) {
+        // Grid lines mapped onto the real shape (slanted if the shape is).
+        for (let g = -3; g <= 3; g++) {
+          for (const [a, b] of [[[g, -3], [g, 3]], [[-3, g], [3, g]]]) {
+            const [x1, y1] = toScreen(gridToView(a)), [x2, y2] = toScreen(gridToView(b));
+            element($('grid'), 'line', {x1, y1, x2, y2, class: 'grid' + (g === 0 ? ' axis' : '')});
           }
-          for (let gy = y0; gy <= y1; gy++) {
-            const sy = oy - gy * scale;
-            element($('grid'), 'line', {x1: 0, y1: sy, x2: 1000, y2: sy, class: 'grid' + (gy === 0 ? ' axis' : '')});
-            element($('grid'), 'text', {x: 12, y: sy - 4, class: 'grid-label'}).textContent = gy;
-          }
+          // Grid numbers just outside the shape: along the bottom and the left.
+          const [lx, ly] = toScreen(gridToView([g, -1.3])), [tx, ty] = toScreen(gridToView([-1.3, g]));
+          element($('grid'), 'text', {x: lx, y: ly + 4, class: 'grid-label'}).textContent = g;
+          element($('grid'), 'text', {x: tx, y: ty + 4, class: 'grid-label'}).textContent = g;
         }
       }
+      if (outlined) {
+        // The anchors' real outline, each side labelled with its length.
+        const points = corners.map(screen);
+        element($('edges'), 'polygon', {points: points.map(p => p.join(',')).join(' '), class: 'outline'});
+        const cx = points.reduce((s, p) => s + p[0], 0) / points.length, cy = points.reduce((s, p) => s + p[1], 0) / points.length;
+        corners.forEach((a, i) => {
+          const b = corners[(i + 1) % corners.length], [x1, y1] = screen(a), [x2, y2] = screen(b);
+          const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, length = Math.hypot(mx - cx, my - cy) || 1;
+          const saved = savedDistances && savedDistances[key(a, b)];
+          const text = element($('labels'), 'text', {class: 'label side',
+            x: mx + (mx - cx) / length * 18, y: my + (my - cy) / length * 18});
+          text.textContent = ft(saved || dist(shown[a], shown[b]) * FT);
+        });
+      }
+      const perimeter = new Set(outlined ? corners.map((a, i) => key(a, corners[(i + 1) % corners.length])) : []);
 
       for (const e of edges) {
-        if (!shown[e.a] || !shown[e.b] || (e.base && !showBase.checked)) continue;
+        if (!shown[e.a] || !shown[e.b] || (e.base && (!showBase.checked || perimeter.has(key(e.a, e.b))))) continue;
         const [x1, y1] = screen(e.a), [x2, y2] = screen(e.b);
         element($('edges'), 'line', {x1, y1, x2, y2,
           class: 'edge ' + (e.base ? 'base' : 'tag') + (e.valid ? '' : ' stale')});
@@ -561,18 +615,25 @@
         const tag = locateTag(pos, ranges);
         // View in grid units when the anchors fit the frame; otherwise in feet.
         const affine = fitAffine(pos, frame);
-        gridMode = !!affine;
+        const toView = affine ? realView(affine) : p => [p[0] / FT, p[1] / FT];
+        gridToView = affine ? g => toView(affine.inverse(g)) : null;
         const view = {};
-        for (const id of Object.keys(pos)) view[id] = affine ? (frame[id] || affine.map(pos[id])) : pos[id].map(v => v / FT);
-        const tagView = tag && (affine ? [...affine.map(tag.point), tag.point[2]] : [tag.point[0] / FT, tag.point[1] / FT, tag.point[2]]);
+        for (const id of Object.keys(pos)) view[id] = toView(pos[id]);
+        const tagView = tag && [...toView(tag.point), tag.point[2]];
         smooth(view, tagView);
+        if (tag && affine) {
+          const g = affine.map(tag.point);
+          tagGrid = tagGrid ? tagGrid.map((v, k) => v + (g[k] - v) * 0.35) : g;
+        }
         draw(edges);
+        $('shape').innerHTML = describeShape();
         if (!tag) {
           $('coords').classList.add('waiting'); $('x').textContent = '–'; $('y').textContent = '–';
           $('detail').textContent = 'The tag needs distances to at least two anchors.';
           return;
         }
-        const [x, y, z] = shown[TAG];
+        const z = shown[TAG][2];
+        const [x, y] = affine && tagGrid ? tagGrid : shown[TAG];
         $('coords').classList.remove('waiting');
         $('x').textContent = fixed(x);
         $('y').textContent = fixed(y);

@@ -60,7 +60,9 @@ two boards take turns starting. `/api/ranges` returns every pair.
 
 The main page prints the tag's X and Y in large type, in grid units without
 a unit label. The same position in feet is shown underneath. Below is a map
-with each distance on its line. By default (0,0) is the center of the space, and the
+of the anchors' real shape: true proportions, Anchor 1 top-left, each side
+labelled in feet, with the grid lines mapped onto it. A caption names the
+shape, for example "4.00 × 6.00 ft rectangle". By default (0,0) is the center of the space, and the
 anchors sit at the corners of a square. Anchor 1 is top-left (-1,1), and the
 rest go clockwise: Anchor 2 (1,1), Anchor 3 (1,-1), Anchor 4 (-1,-1). The
 feet shown are distances from the center. The grid
