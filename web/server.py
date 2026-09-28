@@ -51,12 +51,21 @@ def valid_distances(distances):
 
 def valid_layout(data):
     """{} clears it. "anchors": positions in cm built from "distances" (tape-measured
-    anchor-anchor cm, keyed "a-b"); "frame": grid coordinates the anchors stand for.
+    anchor-anchor cm along the floor, keyed "a-b"); "frame": grid coordinates the anchors
+    stand for; "heights": anchor heights above the floor (cm); "tagHeight": fixed tag
+    height (cm) or null to solve for it.
     Point maps are node id -> [x, y] for 3-10 anchors."""
     try:
-        return (isinstance(data, dict) and set(data) <= {'anchors', 'frame', 'distances'}
+        heights = data.get('heights', {})
+        tag_height = data.get('tagHeight')
+        return (isinstance(data, dict) and set(data) <= {'anchors', 'frame', 'distances', 'heights', 'tagHeight'}
                 and all(valid_points(data[k], 3) for k in ('anchors', 'frame') if k in data)
-                and ('distances' not in data or valid_distances(data['distances'])))
+                and ('distances' not in data or valid_distances(data['distances']))
+                and isinstance(heights, dict) and len(heights) <= 10
+                and all(key.isdigit() and isinstance(v, (int, float)) and math.isfinite(v) and 0 <= v <= 10000
+                        for key, v in heights.items())
+                and (tag_height is None or (isinstance(tag_height, (int, float)) and math.isfinite(tag_height)
+                                            and 0 <= tag_height <= 10000)))
     except (TypeError, ValueError):
         return False
 

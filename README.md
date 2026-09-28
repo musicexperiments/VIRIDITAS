@@ -79,9 +79,13 @@ rectangle or any other), maps it onto the grid corners and saves it to
 `web/layout.json`. It warns if the distances do not fit together. With no
 distances saved, it falls back to a live median of the UWB anchor-to-anchor
 distances.
-The tag is the least-squares fit to its distances from every anchor. With
-three or more anchors, the fit also solves the tag's height above the floor,
-so holding the tag up does not stretch its X and Y. With three or more anchors that are not in a straight line, the
+The tag is the least-squares fit, in 3D, to its distances from every anchor.
+All anchors share one height, set under **Anchor positions** (0 means on the
+floor). The tag's height is solved automatically, so a tag worn by people of
+different heights still gives correct X and Y. The tag's height can also be
+fixed at a known value, which gives the most accurate X and Y. The height
+reading assumes the tag is above the anchors. It is approximate when the tag
+is close to the anchors' height, so floor-level anchors work best. With three or more anchors that are not in a straight line, the
 position has no mirror ambiguity. Keep Anchor 1 and Anchor 2 well apart,
 because they set the baseline. Every board uses the same antenna delay
 (default 16400), which Anchor 1 pushes to the others.
