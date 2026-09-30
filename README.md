@@ -125,10 +125,14 @@ message, about 20 per second per tag with four tags. The message goes to
 `/tagN` on port 8999 + N (`/tag1` on 9000), with one JSON string argument:
 
 ```
-{"x": 0.62, "y": 0.41, "d12": 0.33, "d13": 0.58, "d14": "N/A"}
+{"x": 0.24, "y": -0.18, "inside": 1, "d12": 0.33, "d13": 0.58, "d14": "N/A"}
 ```
 
-- `x`, `y`: 0 to 1 across the anchor grid (0 = left/bottom, 1 = right/top).
+- `x`, `y`: -1 to 1 across the anchor grid, the same frame as the website:
+  A1 (-1, 1), A2 (1, 1), A3 (1, -1), A4 (-1, -1); the center is (0, 0).
+  A tag outside the shape reads as the nearest edge.
+- `inside`: 1 while the tag is within the anchor shape, 0 when it is outside.
+  The simulator's people never leave, so it always sends 1.
 - `dNK`: the directly measured distance from tag N to tag K, divided by the
   farthest distance in the anchor shape (1 = as far apart as the shape
   allows).
@@ -171,12 +175,13 @@ real bridge's.
   inches.
 - The people you choose stay online the whole time.
 
-On start the simulator stops `osc_bridge.py` and anything else using its
-ports. On macOS it then opens one Terminal window per port, showing what
+It leaves anything already listening on its ports (Unreal Engine, for
+example) running. On macOS it opens one Terminal window per port, showing what
 that path receives. Elsewhere, run `python3 simulate.py --monitor 9000` and
 so on yourself. The main window draws the shape (Anchor 1 top-left,
-clockwise), the people with trails, and the values being sent. Keys: space
-pauses, m returns to the menu, q quits and closes only the port windows it
+clockwise), the people with trails, and the values being sent. Keys: the arrows
+switch to fully manual (everyone stops, readings have no noise) and move
+one person per press (1-8 picks which, a lets everyone wander again), space pauses, m returns to the menu, q quits and closes only the port windows it
 opened. Start your own receiving software after the simulator, or close the
 port windows first.
 

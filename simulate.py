@@ -7,8 +7,8 @@ osc_bridge.py, so software can be written and tested without the hardware.
 A single file with no dependencies beyond Python 3 (standard library only).
 
 Each person is a tag: /tagN on UDP port 8999 + N (/tag1 on 9000, /tag2 on
-9001, ...) at 127.0.0.1, one JSON string argument {"x": .., "y": .., "dNK": ..}.
-x and y run 0 to 1 across the shape (0 = left/bottom, 1 = right/top); dNK is
+9001, ...) at 127.0.0.1, one JSON string argument {"x": .., "y": .., "inside": .., "dNK": ..}.
+x and y run -1 to 1 across the shape (A1 (-1, 1), A2 (1, 1), A3 (1, -1), A4 (-1, -1)); dNK is
 the distance from tag N to tag K divided by the shape's diagonal. The data
 behaves like the hardware: a few centimetres of noise, an occasional missing
 tag-to-tag reading, and "N/A" when two people are within a few inches.
@@ -17,10 +17,10 @@ Anchor 1 is the top-left corner, then clockwise, as on the website.
 /tag1-/tag4 always send, even with fewer people: a tag with nobody sends
 every key as "N/A". The people you choose stay online the whole time.
 
-On start it stops anything using ports 9000 and up (and osc_bridge.py), then
-opens one Terminal window per port showing what that path receives (macOS; on
-other systems run `python3 simulate.py --monitor 9000` etc. yourself). q
-quits and closes those windows. Start your own receiving software after the
+On start it opens one Terminal window per port showing what that path receives (macOS; on
+other systems run `python3 simulate.py --monitor 9000` etc. yourself). The
+arrow keys switch to fully manual: everyone stops, readings have no noise,
+and each press moves one person (1-8 picks which); a lets everyone wander again. q quits and closes those windows. Start your own receiving software after the
 simulator, or close the port windows first.
 """
 import argparse
@@ -76,8 +76,10 @@ NOISE_CM = 3.0          # UWB-like noise
 DROP_RATE = 0.03        # chance a tag-to-tag reading is missing
 TOO_CLOSE_CM = 8.0      # tags this close cannot range each other
 HOST, FIRST_PORT = '127.0.0.1', 9000  # /tag1 -> 9000, /tag2 -> 9001, ...
+SC_FIRST_PORT = 9100  # the same messages for SuperCollider: /tag1 -> 9100, ...
 MIN_TAGS = 4  # Like the real bridge, /tag1-/tag4 always send; a tag with no person is all "N/A".
 TRAIL = 14
+NUDGE_FT = 0.25        # one arrow-key press; held keys repeat at about walking pace
 
 
 class Person:
@@ -96,6 +98,7 @@ class Person:
         self.target = None
         self.cruise = 0.0
         self.trail = []
+        self.manual = False     # Moved by the arrow keys instead of wandering.
 
     def margin(self):
         # Destinations stay out of the edges: about 12% of the size in from each wall.
@@ -166,6 +169,19 @@ class Person:
         self.y += math.sin(self.heading) * self.speed * dt
         self.keep_inside()
 
+    def nudge(self, dx, dy):
+        """Arrow-key override: move by hand and stop wandering until released."""
+        self.manual, self.target, self.speed = True, None, 0.0
+        self.x += dx
+        self.y += dy
+        if dx or dy:
+            self.heading = math.atan2(dy, dx)
+        self.keep_inside()
+
+    def release(self):
+        """Back to wandering, after a short look around."""
+        self.manual, self.linger = False, self.rng.uniform(0.3, 1.0)
+
     def keep_inside(self):
         self.x = min(self.width - 0.05, max(0.05, self.x))
         self.y = min(self.height - 0.05, max(0.05, self.y))
@@ -182,9 +198,11 @@ class Simulation:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.last_messages = {}
         self.sent = 0
+        self.controlled = 1  # The person the arrow keys move.
+        self.manual = False  # Arrow keys in use: nobody wanders and readings are exact.
 
     def noisy(self, value_ft):
-        return value_ft + self.rng.gauss(0, NOISE_CM) / FT
+        return value_ft if self.manual else value_ft + self.rng.gauss(0, NOISE_CM) / FT
 
     def measure_pairs(self):
         """One reading per pair of tags, shared by both tags (as on the hardware)."""
@@ -192,7 +210,7 @@ class Simulation:
         for i, a in enumerate(self.people):
             for b in self.people[i + 1:]:
                 distance = math.hypot(a.x - b.x, a.y - b.y)
-                missing = distance * FT < TOO_CLOSE_CM or self.rng.random() < DROP_RATE
+                missing = distance * FT < TOO_CLOSE_CM or (not self.manual and self.rng.random() < DROP_RATE)
                 readings[(a.number, b.number)] = (
                     MISSING if missing else round(min(1.0, max(0.0, self.noisy(distance)) / self.diagonal), 4))
         return readings
@@ -201,11 +219,11 @@ class Simulation:
         """Every key is always present; unavailable values are "N/A"."""
         person = self.people[number - 1] if number <= len(self.people) else None
         if person is None:
-            data = {'x': MISSING, 'y': MISSING}
+            data = {'x': MISSING, 'y': MISSING, 'inside': MISSING}
         else:
-            x = min(1.0, max(0.0, self.noisy(person.x) / self.width))
-            y = min(1.0, max(0.0, self.noisy(person.y) / self.height))
-            data = {'x': round(x, 4), 'y': round(y, 4)}
+            x = min(1.0, max(-1.0, 2 * self.noisy(person.x) / self.width - 1))
+            y = min(1.0, max(-1.0, 2 * self.noisy(person.y) / self.height - 1))
+            data = {'x': round(x, 4) + 0.0, 'y': round(y, 4) + 0.0, 'inside': 1}  # People never leave the shape; + 0.0 avoids -0.0.
         for other in range(1, self.tag_count + 1):
             if other != number:
                 data[f'd{number}{other}'] = readings.get((min(number, other), max(number, other)), MISSING)
@@ -216,13 +234,16 @@ class Simulation:
         for number in range(1, self.tag_count + 1):
             data = self.message(number, readings)
             text = json.dumps(data, separators=(', ', ': '))
-            self.sock.sendto(osc_message(f'/tag{number}', text), (HOST, FIRST_PORT + number - 1))
+            packet = osc_message(f'/tag{number}', text)
+            for first in (FIRST_PORT, SC_FIRST_PORT):
+                self.sock.sendto(packet, (HOST, first + number - 1))
             self.last_messages[number] = data
             self.sent += 1
 
     def step(self, dt):
         for person in self.people:
-            person.step(dt, self.people)
+            if not self.manual:
+                person.step(dt, self.people)
             person.trail.append((person.x, person.y))
             del person.trail[:-TRAIL]
 
@@ -394,15 +415,21 @@ def draw(screen, sim, paused, rate):
         fmt = lambda v: f'{v:.3f}' if isinstance(v, float) else str(v)
         dists = '  '.join(f'{k}={fmt(v)}' for k, v in data.items() if k.startswith('d'))
         put(row, 1, f'/tag{number}', curses.color_pair(number) | curses.A_BOLD)
+        if number == sim.controlled:
+            put(row, 0, '›', curses.color_pair(number) | curses.A_BOLD)
         person = sim.people[number - 1] if number <= len(sim.people) else None
         if person is None:
             put(row, 7, 'no person · still sending: ' + json.dumps(data, separators=(', ', ': '))[:max(0, cols - 40)],
                 curses.color_pair(9) | curses.A_DIM)
             continue
         put(row, 7, f'{fmt(data.get("x", "-")):<6} {fmt(data.get("y", "-")):<6} '
-                    f'({person.x:5.2f}, {person.y:5.2f} ft)  {dists}')
-    put(row + 2, 1, ('PAUSED · ' if paused else '') + 'space pause · m back to menu · q quit', curses.color_pair(9))
+                    f'({person.x:5.2f}, {person.y:5.2f} ft)  {dists}' + ('  MOVED BY HAND' if person.manual else ''))
+    put(row + 2, 1, ('PAUSED · ' if paused else '') + ('MANUAL · ' if sim.manual else '') + f'arrows move tag {sim.controlled} · 1-{len(sim.people)} pick tag · '
+                    'a auto · space pause · m back to menu · q quit', curses.color_pair(9))
     screen.refresh()
+
+
+ARROWS = {curses.KEY_UP: (0, 1), curses.KEY_DOWN: (0, -1), curses.KEY_LEFT: (-1, 0), curses.KEY_RIGHT: (1, 0)}
 
 
 def run(screen, sim):
@@ -419,12 +446,25 @@ def run(screen, sim):
     rate_window, rate = [time.monotonic(), 0], 0.0
     while True:
         key = screen.getch()
-        if key in (ord('q'), ord('Q')):
-            return 'quit'
-        if key in (ord('m'), ord('M')):
-            return 'menu'
-        if key == ord(' '):
-            paused = not paused
+        while key != -1:  # Handle every pending key so held arrows don't lag behind.
+            if key in (ord('q'), ord('Q')):
+                return 'quit'
+            if key in (ord('m'), ord('M')):
+                return 'menu'
+            if key == ord(' '):
+                paused = not paused
+            if ord('1') <= key <= ord('9') and key - ord('0') <= len(sim.people):
+                sim.controlled = key - ord('0')
+            person = sim.people[sim.controlled - 1]
+            if key in ARROWS:
+                dx, dy = ARROWS[key]
+                sim.manual = True
+                person.nudge(dx * NUDGE_FT, dy * NUDGE_FT)
+            if key in (ord('a'), ord('A')) and sim.manual:
+                sim.manual = False
+                for other in sim.people:
+                    other.release()
+            key = screen.getch()
         now = time.monotonic()
         dt, last = min(0.2, now - last), now
         if not paused:
@@ -476,7 +516,7 @@ def main():
             except (EOFError, KeyboardInterrupt):
                 return
         tags = max(MIN_TAGS, config['people'])
-        free_ports(tags)
+        # free_ports(tags)  # Disabled: leave other listeners (Unreal Engine) running.
         close_monitors(tags)  # Windows from a previous run (m -> menu).
         sim = Simulation(config)
         if not args.headless:

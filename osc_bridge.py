@@ -6,9 +6,10 @@ Anchor 1 pushes every new range to this program over UDP (no polling). For each
 range that involves a tag, the tag is re-located and one OSC message goes out:
 
   /tag1 -> port 9000, /tag2 -> 9001, ... (tag N on base port + N - 1)
-  argument: a JSON string {"x": .., "y": .., "d12": .., "d13": .., ...}
+  the same messages also go to 9100, 9101, ... for SuperCollider (--also-port)
+  argument: a JSON string {"x": .., "y": .., "inside": .., "d12": .., "d13": .., ...}
 
-x and y run 0 to 1 across the anchors' grid (0 = left/bottom, 1 = right/top).
+x and y run -1 to 1 across the anchors' grid: A1 (-1, 1), A2 (1, 1), A3 (1, -1), A4 (-1, -1).
 dNK is the directly measured distance from tag N to tag K, divided by the
 farthest distance in the anchor shape (so 1 = as far apart as the shape allows).
 A value that has not been read (no fresh range) is the string "N/A". Every
@@ -222,7 +223,7 @@ class Bridge:
             k = (min(tag, anchor), max(tag, anchor))
             if fresh(k):
                 anchor_ranges[anchor] = self.ranges[k][0]
-        message = {'x': MISSING, 'y': MISSING}
+        message = {'x': MISSING, 'y': MISSING, 'inside': MISSING}
         if len(anchor_ranges) >= 3:
             start = self.last_point.get(tag) or (
                 sum(pos[a][0] for a in anchor_ranges) / len(anchor_ranges),
@@ -231,9 +232,11 @@ class Bridge:
             self.last_point[tag] = point
             gx, gy = mapper(point)
             x0, x1, y0, y1 = self.grid_box
-            clamp = lambda v: min(1.0, max(0.0, v))
-            message['x'] = round(clamp((gx - x0) / (x1 - x0)), 4)
-            message['y'] = round(clamp((gy - y0) / (y1 - y0)), 4)
+            x, y = 2 * (gx - x0) / (x1 - x0) - 1, 2 * (gy - y0) / (y1 - y0) - 1
+            clamp = lambda v: min(1.0, max(-1.0, v))
+            message['x'] = round(clamp(x), 4) + 0.0  # + 0.0 turns -0.0 into 0.0
+            message['y'] = round(clamp(y), 4) + 0.0
+            message['inside'] = int(-1 <= x <= 1 and -1 <= y <= 1)
         me = tag_number(tag)
         seen = {n for pair in self.ranges for n in pair if is_tag(n)}
         others = sorted((seen | self.known_tags | self.configured_tags) - {tag}, key=tag_number)
@@ -241,7 +244,9 @@ class Bridge:
             k = (min(tag, other), max(tag, other))
             message[f'd{me}{tag_number(other)}'] = round(min(1.0, self.ranges[k][0] / span), 4) if fresh(k) else MISSING
         text = json.dumps(message, separators=(', ', ': '))
-        self.osc.sendto(osc_message(f'/tag{me}', text), (self.args.osc_host, self.args.osc_port + me - 1))
+        packet = osc_message(f'/tag{me}', text)
+        for base in [self.args.osc_port] + self.args.also_port:
+            self.osc.sendto(packet, (self.args.osc_host, base + me - 1))
         self.sent[me] = self.sent.get(me, 0) + 1
         self.last_sent[tag] = now
 
@@ -270,6 +275,8 @@ def main():
     parser.add_argument('--listen-port', type=int, default=4210, help='UDP port anchor 1 streams to')
     parser.add_argument('--osc-host', default='127.0.0.1')
     parser.add_argument('--osc-port', type=int, default=9000, help='port for /tag1; tag N uses this + N - 1')
+    parser.add_argument('--also-port', type=int, nargs='*', default=[9100],
+                        help='extra base ports that get the same messages (default 9100, for SuperCollider)')
     parser.add_argument('--tags', type=int, default=4, help='always send /tag1 to /tagN (default 4)')
     parser.add_argument('--smooth', action='store_true', help='use the 5-reading median (steadier, ~0.5 s more lag)')
     args = parser.parse_args()
@@ -280,7 +287,7 @@ def main():
     listener.settimeout(0.1)
     stop = threading.Event()
     threading.Thread(target=subscribe, args=(args, stop, bridge), daemon=True).start()
-    print(f'OSC out: /tagN -> {args.osc_host}:{args.osc_port}+N-1 · listening for anchor 1 on UDP {args.listen_port}'
+    print(f'OSC out: /tagN -> {args.osc_host}:' + ', '.join(f'{p}+N-1' for p in [args.osc_port] + args.also_port) + f' · listening for anchor 1 on UDP {args.listen_port}'
           f' · {"median-smoothed" if args.smooth else "raw (lowest latency)"}', flush=True)
     last_report = time.monotonic()
     try:

@@ -1,0 +1,32 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "3.0",
+	"FriendlyName": "OSCToolset",
+	"Description": "A runtime plugin that simplifies the OSC workflow in Unreal Engine.",
+	"Category": "",
+	"CreatedBy": "Eusebi Jucgla",
+	"CreatedByURL": "https://www.eusebijucgla.com/",
+	"DocsURL": "https://www.eusebijucgla.com/tools/osctoolset/unrealengine",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"EngineVersion": "5.8.0",
+	"CanContainContent": false,
+	"Installed": true,
+	"Modules": [
+		{
+			"Name": "OSCToolset",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [
+				"Win64"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "OSC",
+			"Enabled": true
+		}
+	]
+}
