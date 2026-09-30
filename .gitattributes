@@ -1,0 +1,2 @@
+UE/Landscape1.zip filter=lfs diff=lfs merge=lfs -text
+UE/Landscape1[[:space:]]2/Intermediate/CachedAssetRegistry/*.bin filter=lfs diff=lfs merge=lfs -text

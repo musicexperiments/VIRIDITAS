@@ -5,11 +5,3 @@ firmware/*/build/
 web/correction.json
 web/layout.json
 firmware/secrets.h
-.DS_Store
-
-# Unreal Engine generated/cache folders and archives
-UE/**/Intermediate/
-UE/**/DerivedDataCache/
-UE/**/Saved/
-UE/**/Binaries/
-UE/*.zip
