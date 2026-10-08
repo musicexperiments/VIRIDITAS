@@ -9,7 +9,8 @@
 //   GND  -> GND  (12-pin header, pin 2)
 //   SD, GAIN unconnected (amp mixes L+R, 9 dB gain)
 //
-// Plays Happy Birthday on a loop, with a 2 s pause between repeats.
+// Plays an original spooky '80s funk tune on a loop: a punchy E minor riff,
+// a creeping chromatic line with a wobble, and a werewolf howl, then a pause.
 // Serial monitor at 115200 baud: send + or - to change the volume.
 #include <ESP_I2S.h>
 #include <math.h>
@@ -19,36 +20,72 @@ const int SAMPLE_RATE = 22050;
 const int CHUNK = 256;
 
 I2SClass i2s;
-float volume = 1.0f;  // 0..1 of full scale
+float volume = 0.3f;  // 0..1 of full scale
+float phase = 0;      // sine phase, carried across notes so they join without clicks
 
-// Plays freq Hz for ms milliseconds. freq = 0 is silence.
-void play(float freq, int ms) {
+// Declared here so the Arduino builder adds no prototypes of its own (it can
+// insert them inside a function body, which breaks the build).
+void readVolume();
+void play(float from, float to, int ms, float wobble);
+void setup();
+void loop();
+
+void readVolume() {
+  while (Serial.available()) {
+    char c = Serial.read();
+    if (c == '+') volume = min(1.0f, volume + 0.1f);
+    if (c == '-') volume = max(0.0f, volume - 0.1f);
+    if (c == '+' || c == '-') Serial.printf("SPEAKER,volume=%.1f\n", volume);
+  }
+}
+
+// Plays a note for ms milliseconds, gliding from `from` to `to` Hz (equal for a
+// plain note; 0 is silence). wobble is vibrato depth (0.01 = ±1%) at 6 Hz.
+void play(float from, float to, int ms, float wobble) {
   const int frames = (long)SAMPLE_RATE * ms / 1000;
   const int fade = SAMPLE_RATE / 200;  // 5 ms ramps avoid clicks
+  const float a = log2f(max(from, 1.0f)), b = log2f(max(to, 1.0f));
   int16_t buf[CHUNK * 2];
-  float phase = 0;
+  float vib = 0;
   for (int i = 0; i < frames;) {
+    readVolume();
     int n = min(CHUNK, frames - i);
     for (int j = 0; j < n; j++, i++) {
-      float env = min(1.0f, min(i, frames - 1 - i) / (float)fade);
-      int16_t s = (int16_t)(sinf(phase) * env * volume * 32767);
+      const float t = i / (float)frames;
+      const float env = from > 0 ? min(1.0f, min(i, frames - 1 - i) / (float)fade) : 0;
+      vib += 2 * PI * 6 / SAMPLE_RATE;
+      const float freq = exp2f(a + (b - a) * t + wobble * sinf(vib));
       phase += 2 * PI * freq / SAMPLE_RATE;
       if (phase > 2 * PI) phase -= 2 * PI;
-      buf[2 * j] = buf[2 * j + 1] = s;  // same sample on L and R
+      buf[2 * j] = buf[2 * j + 1] = (int16_t)(sinf(phase) * env * volume * 32767);
     }
     i2s.write((uint8_t *)buf, n * sizeof(int16_t) * 2);
   }
 }
 
-// Happy Birthday in C, 3/4 time: {Hz, beats}.
-const float N_G4 = 392, N_A4 = 440, N_B4 = 494, N_C5 = 523, N_D5 = 587, N_E5 = 659, N_F5 = 698, N_G5 = 784;
-const float SONG[][2] = {
-  {N_G4, .75}, {N_G4, .25}, {N_A4, 1}, {N_G4, 1}, {N_C5, 1}, {N_B4, 2},
-  {N_G4, .75}, {N_G4, .25}, {N_A4, 1}, {N_G4, 1}, {N_D5, 1}, {N_C5, 2},
-  {N_G4, .75}, {N_G4, .25}, {N_G5, 1}, {N_E5, 1}, {N_C5, 1}, {N_B4, 1}, {N_A4, 2},
-  {N_F5, .75}, {N_F5, .25}, {N_E5, 1}, {N_C5, 1}, {N_D5, 1}, {N_C5, 3},
+const float R = 0;  // rest
+const float N_B4 = 494, N_D5 = 587, N_E5 = 659, N_Fs5 = 740, N_G5 = 784, N_A5 = 880, N_As5 = 932, N_B5 = 988, N_E6 = 1319;
+const int STEP_MS = 250;  // one sixteenth-ish step at about 120 BPM
+
+// {from Hz, to Hz, steps, wobble, gap}: gap = 1 makes the note short and punchy.
+struct Note { float from, to; float steps, wobble; int gap; };
+const Note TUNE[] = {
+  // Riff, twice: punchy and syncopated.
+  {N_E5, N_E5, 1, 0, 1}, {R, R, 1, 0, 0}, {N_E5, N_E5, 1, 0, 1}, {N_D5, N_D5, 1, 0, 1},
+  {N_B4, N_B4, 1, 0, 1}, {R, R, 1, 0, 0}, {N_D5, N_D5, 1, 0, 1}, {N_E5, N_E5, 1, 0, 1},
+  {N_G5, N_G5, 1, 0, 1}, {N_Fs5, N_Fs5, 1, 0, 1}, {N_E5, N_E5, 1, 0, 1}, {N_D5, N_D5, 1, 0, 1},
+  {N_E5, N_E5, 3, 0.004f, 0}, {R, R, 1, 0, 0},
+  {N_E5, N_E5, 1, 0, 1}, {R, R, 1, 0, 0}, {N_E5, N_E5, 1, 0, 1}, {N_D5, N_D5, 1, 0, 1},
+  {N_B4, N_B4, 1, 0, 1}, {R, R, 1, 0, 0}, {N_D5, N_D5, 1, 0, 1}, {N_E5, N_E5, 1, 0, 1},
+  {N_G5, N_G5, 1, 0, 1}, {N_A5, N_A5, 1, 0, 1}, {N_G5, N_G5, 1, 0, 1}, {N_Fs5, N_Fs5, 1, 0, 1},
+  {N_E5, N_E5, 3, 0.004f, 0}, {R, R, 1, 0, 0},
+  // Something creeping down the hall: slow chromatic steps with a wobble.
+  {N_B5, N_B5, 2, 0.012f, 0}, {N_As5, N_As5, 2, 0.012f, 0}, {N_A5, N_A5, 2, 0.012f, 0},
+  {N_G5 * 1.0595f, N_G5 * 1.0595f, 2, 0.012f, 0}, {N_G5, N_G5, 4, 0.016f, 0}, {R, R, 2, 0, 0},
+  // The howl: swoop up, hold, and fall away.
+  {N_B4, N_E6, 4, 0.006f, 0}, {N_E6, N_E6, 3, 0.02f, 0}, {N_E6, N_B4, 5, 0.01f, 0},
+  {R, R, 8, 0, 0},
 };
-const int BEAT_MS = 400, GAP_MS = 40;  // short gap so repeated notes are distinct
 
 void setup() {
   Serial.begin(115200);
@@ -57,20 +94,18 @@ void setup() {
     Serial.println("SPEAKER,error,i2s_begin_failed");
     while (true) delay(1000);
   }
-  Serial.println("SPEAKER,ready,happy birthday  (+/- = volume)");
+  Serial.println("SPEAKER,ready,spooky funk  (+/- = volume)");
 }
 
 void loop() {
-  while (Serial.available()) {
-    char c = Serial.read();
-    if (c == '+') volume = min(1.0f, volume + 0.1f);
-    if (c == '-') volume = max(0.0f, volume - 0.1f);
-    if (c == '+' || c == '-') Serial.printf("SPEAKER,volume=%.1f\n", volume);
+  Serial.println("SPEAKER,spooky_funk");
+  for (const Note &note : TUNE) {
+    const int ms = note.steps * STEP_MS;
+    if (note.gap) {
+      play(note.from, note.to, ms - 70, note.wobble);
+      play(R, R, 70, 0);
+    } else {
+      play(note.from, note.to, ms, note.wobble);
+    }
   }
-  Serial.println("SPEAKER,happy_birthday");
-  for (auto &note : SONG) {
-    play(note[0], note[1] * BEAT_MS - GAP_MS);
-    play(0, GAP_MS);
-  }
-  play(0, 2000);
 }

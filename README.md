@@ -87,9 +87,11 @@ shape, for example "4.00 × 6.00 ft rectangle". By default (0,0) is the center o
 anchors sit at the corners of a square. Anchor 1 is top-left (-1,1), and the
 rest go clockwise: Anchor 2 (1,1), Anchor 3 (1,-1), Anchor 4 (-1,-1). The
 feet shown are distances from the center. The grid
-values are editable under **Anchor positions**. A least-squares affine fit
-maps the real anchor positions onto the grid, so the square's physical size
-does not matter.
+values are editable under **Anchor positions**. With four anchors forming a
+convex shape, a perspective map puts each anchor exactly on its grid corner, so
+any four-sided space (square, rectangle, trapezoid or irregular) spans -1 to 1
+and its physical size does not matter. With three anchors, or a shape that is
+not convex, a least-squares affine fit is used instead.
 Under **Anchor positions**,
 choose **Rectangle or square** and enter only the tape-measured width
 (Anchor 1 to Anchor 2) and height (Anchor 2 to Anchor 3). The other sides and

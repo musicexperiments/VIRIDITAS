@@ -82,6 +82,54 @@ def fit_affine(pos, frame):
     return lambda p: (cu[0] * p[0] + cu[1] * p[1] + cu[2], cv[0] * p[0] + cv[1] * p[1] + cv[2])
 
 
+def solve(a, b):
+    """Gaussian elimination with partial pivoting; None if singular."""
+    n = len(b)
+    m = [list(row) + [b[i]] for i, row in enumerate(a)]
+    for c in range(n):
+        p = max(range(c, n), key=lambda r: abs(m[r][c]))
+        if abs(m[p][c]) < 1e-12:
+            return None
+        m[c], m[p] = m[p], m[c]
+        for r in range(n):
+            if r != c:
+                f = m[r][c] / m[c][c]
+                m[r] = [v - f * w for v, w in zip(m[r], m[c])]
+    return [m[i][n] / m[i][i] for i in range(n)]
+
+
+def convex(points):
+    """True if the points, in order, make a convex polygon."""
+    n = len(points)
+    turns = [(points[(i + 1) % n][0] - points[i][0]) * (points[(i + 2) % n][1] - points[(i + 1) % n][1]) -
+             (points[(i + 1) % n][1] - points[i][1]) * (points[(i + 2) % n][0] - points[(i + 1) % n][0])
+             for i in range(n)]
+    return all(t > 1e-9 for t in turns) or all(t < -1e-9 for t in turns)
+
+
+def fit_grid(pos, frame):
+    """Map from anchor positions (cm) to the grid. With four anchors forming a convex
+    shape, a perspective map puts each anchor exactly on its grid corner, so any
+    four-sided space spans -1 to 1. Otherwise the least-squares affine fit."""
+    ids = [i for i in frame if i in pos]
+    if len(ids) == 4:
+        cx, cy = sum(frame[i][0] for i in ids) / 4, sum(frame[i][1] for i in ids) / 4
+        ids.sort(key=lambda i: math.atan2(frame[i][1] - cy, frame[i][0] - cx))
+        src, dst = [pos[i] for i in ids], [frame[i] for i in ids]
+        if convex(src) and convex(dst):
+            a, b = [], []
+            for (x, y), (u, v) in zip(src, dst):
+                a += [[x, y, 1, 0, 0, 0, -u * x, -u * y], [0, 0, 0, x, y, 1, -v * x, -v * y]]
+                b += [u, v]
+            h = solve(a, b)
+            if h:
+                def mapper(p):
+                    w = h[6] * p[0] + h[7] * p[1] + 1
+                    return ((h[0] * p[0] + h[1] * p[1] + h[2]) / w, (h[3] * p[0] + h[4] * p[1] + h[5]) / w)
+                return mapper
+    return fit_affine(pos, frame)
+
+
 def build_shape(ids, d):
     """Anchor positions from anchor-anchor distances (used only without a saved layout)."""
     pairs = [(a, b) for a in ids for b in ids if a < b and d(a, b)]
@@ -186,7 +234,7 @@ class Bridge:
         if not pos:
             self.geometry = None
             return
-        mapper = fit_affine(pos, self.frame)
+        mapper = fit_grid(pos, self.frame)
         span = max((math.dist(pos[a], pos[b]) for a in pos for b in pos if a < b), default=0)
         self.geometry = (pos, mapper, span) if mapper and span else None
 

@@ -287,13 +287,63 @@
       const unitCm = [Math.hypot(cv[1] / l, -cv[0] / l), Math.hypot(-cu[1] / l, cu[0] / l)];
       const inverse = g => { const x = g[0] - cu[2], y = g[1] - cv[2];
         return [(cv[1] * x - cu[1] * y) / l, (-cv[0] * x + cu[0] * y) / l]; };
-      return {map, inverse, rms, unitCm};
+      // With four anchors in a convex shape, a perspective map puts each anchor exactly
+      // on its grid corner, so any four-sided space spans -1 to 1 (as osc_bridge.py does).
+      const persp = fitPerspective(pos, grid, ids);
+      if (persp) return {map: persp.map, inverse: persp.inverse, affineInverse: inverse, rms: 0, unitCm};
+      return {map, inverse, affineInverse: inverse, rms, unitCm};
+    }
+
+    function convex(points) {
+      const n = points.length, turns = points.map((p, i) => {
+        const q = points[(i + 1) % n], r = points[(i + 2) % n];
+        return (q[0] - p[0]) * (r[1] - q[1]) - (q[1] - p[1]) * (r[0] - q[0]);
+      });
+      return turns.every(t => t > 1e-9) || turns.every(t => t < -1e-9);
+    }
+
+    // Gaussian elimination with partial pivoting; null if singular.
+    function solveLinear(a, b) {
+      const n = b.length, m = a.map((row, i) => [...row, b[i]]);
+      for (let c = 0; c < n; c++) {
+        let p = c;
+        for (let r = c + 1; r < n; r++) if (Math.abs(m[r][c]) > Math.abs(m[p][c])) p = r;
+        if (Math.abs(m[p][c]) < 1e-12) return null;
+        [m[c], m[p]] = [m[p], m[c]];
+        for (let r = 0; r < n; r++) {
+          if (r === c) continue;
+          const f = m[r][c] / m[c][c];
+          m[r] = m[r].map((v, k) => v - f * m[c][k]);
+        }
+      }
+      return m.map((row, i) => row[n] / row[i]);
+    }
+
+    function fitPerspective(pos, grid, ids) {
+      if (ids.length !== 4) return null;
+      const cx = ids.reduce((s, id) => s + grid[id][0], 0) / 4, cy = ids.reduce((s, id) => s + grid[id][1], 0) / 4;
+      const order = [...ids].sort((a, b) => Math.atan2(grid[a][1] - cy, grid[a][0] - cx) - Math.atan2(grid[b][1] - cy, grid[b][0] - cx));
+      const src = order.map(id => pos[id]), dst = order.map(id => grid[id]);
+      if (!convex(src) || !convex(dst)) return null;
+      const homography = (from, to) => {
+        const a = [], b = [];
+        from.forEach(([x, y], i) => {
+          const [u, v] = to[i];
+          a.push([x, y, 1, 0, 0, 0, -u * x, -u * y], [0, 0, 0, x, y, 1, -v * x, -v * y]);
+          b.push(u, v);
+        });
+        const h = solveLinear(a, b);
+        return h && (p => { const w = h[6] * p[0] + h[7] * p[1] + 1;
+          return [(h[0] * p[0] + h[1] * p[1] + h[2]) / w, (h[3] * p[0] + h[4] * p[1] + h[5]) / w]; });
+      };
+      const map = homography(src, dst), inverse = homography(dst, src);
+      return map && inverse ? {map, inverse} : null;
     }
 
     // Real-shape view in feet: rotate/mirror the measured positions (no stretching)
     // so the grid center is the origin and the grid's +x/+y point right/up.
     function realView(affine) {
-      const o = affine.inverse([0, 0]), px = affine.inverse([1, 0]), py = affine.inverse([0, 1]);
+      const o = affine.affineInverse([0, 0]), px = affine.affineInverse([1, 0]), py = affine.affineInverse([0, 1]);
       let u = [px[0] - o[0], px[1] - o[1]];
       const lu = Math.hypot(...u); u = u.map(v => v / lu);
       let w = [py[0] - o[0], py[1] - o[1]];
