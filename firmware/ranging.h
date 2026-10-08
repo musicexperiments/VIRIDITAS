@@ -11,6 +11,12 @@
 #include <WebServer.h>
 #include <WiFiUdp.h>
 #endif
+// A tag that defines AUDIO_STREAM keeps Wi-Fi on and also plays audio streamed by
+// audio_stream.py on its MAX98357A amp (see audio_stream.h). Ranging is unchanged.
+#ifdef AUDIO_STREAM
+static_assert(NODE_ID != 1, "anchor 1 already runs Wi-Fi; AUDIO_STREAM is for the other boards");
+#include "audio_stream.h"
+#endif
 
 // Node ids: 1 = anchor 1 (Wi-Fi, coordinator), 2 = tag 1, 3..5 = anchors 2..4,
 // 6 and up = tags 2, 3, ... To add a tag, raise NODE_COUNT and give the new
@@ -94,6 +100,33 @@ static void enterUpdateMode() {
   WiFi.begin(WIFI_NAME, WIFI_PASSWORD);
   Serial.println("OTA,update_mode,waiting_for_wifi");
 }
+
+#ifdef AUDIO_STREAM
+// Wi-Fi stays on for the audio, so updates are accepted at any time.
+static bool audioOtaStarted = false;
+
+static void startAudioWifi() {
+  WiFi.persistent(false);
+  WiFi.mode(WIFI_STA);
+  WiFi.setHostname(HOSTNAME);
+  WiFi.setSleep(false);  // power save adds 100 ms+ gaps to the audio
+  WiFi.setAutoReconnect(true);
+  WiFi.begin(WIFI_NAME, WIFI_PASSWORD);
+  AudioStream::begin();
+  Serial.printf("SPEAKER,joining,%s\n", WIFI_NAME);
+}
+
+static void serviceAudioWifi() {
+  if (WiFi.status() != WL_CONNECTED) return;
+  if (!audioOtaStarted) {
+    audioOtaStarted = true;
+    startOta();
+    Serial.printf("SPEAKER,ready,ip=%s,port=%d,host=%s.local\n", WiFi.localIP().toString().c_str(),
+                  AudioStream::PORT, HOSTNAME);
+  }
+  ArduinoOTA.handle();
+}
+#endif
 
 // Ranging is paused; reboot back to normal if no update arrives in the window.
 static void serviceUpdateMode() {
@@ -467,7 +500,9 @@ static void handleFrame() {
     const uint32_t poll = DW3000.read(0x12, 0x04);
     if (sender == 1) {
 #if NODE_ID != 1
+#ifndef AUDIO_STREAM  // with audio, Wi-Fi and updates are always on
       if (((poll >> 16) & 0xFF) == COMMAND_UPDATE) { enterUpdateMode(); return; }
+#endif
 #endif
       const uint16_t requested = poll & 0xFFFF;
       if (requested != antennaDelay) pendingAntennaDelay = requested;
@@ -525,6 +560,9 @@ void setup() {
 #if NODE_ID == 1
   connectWifi();
 #endif
+#ifdef AUDIO_STREAM
+  startAudioWifi();
+#endif
   DW3000.begin();
   DW3000.hardReset();
   delay(200);
@@ -548,6 +586,9 @@ void setup() {
 void loop() {
 #if NODE_ID != 1
   if (updateMode) { serviceUpdateMode(); return; }
+#ifdef AUDIO_STREAM
+  if (state == IDLE) serviceAudioWifi();  // outside exchanges, like anchor 1's Wi-Fi
+#endif
 #else
   // Keep HTTP work outside exchanges; then start the next pair's exchange.
   if (state == IDLE) serviceWifi();

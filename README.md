@@ -187,6 +187,31 @@ one person per press (1-8 picks which, a lets everyone wander again), space paus
 opened. Start your own receiving software after the simulator, or close the
 port windows first.
 
+## Stream audio to a board's speaker
+
+A board with the MAX98357A amp (wired as in `firmware/speaker_test`) can play
+16 kHz mono 16-bit audio sent over UDP port 4220. Tag 4 does this while it keeps
+ranging: `firmware/tag4` defines `AUDIO_STREAM`, which keeps its Wi-Fi on (as
+`uwb-tag4.local`, so `ota.py tag4` needs no wake-up from the anchor). Any other
+board can do the same with that one line. `firmware/audio_stream` is a speaker
+only, with no UWB, as `uwb-speaker.local`. The audio code is in
+`firmware/audio_stream.h`.
+
+```sh
+arduino-cli --config-file arduino-cli.yaml compile --upload -p PORT --fqbn esp32:esp32:esp32 firmware/audio_stream
+/Applications/SuperCollider.app/Contents/MacOS/sclang supercollider/sine_stream.scd
+```
+
+`sine_stream.scd` opens a window to control a sine: on/off, frequency, volume,
+and an option to also play it on the laptop. It starts `audio_stream.py`, which
+reads the sound from the SuperCollider server, converts it to 16 kHz and sends
+it to the board named in `~speaker` (tag 4 by default) in 10 ms packets. Each packet also carries the
+previous 10 ms, so a single lost packet loses nothing. The board keeps about
+60 ms buffered, fades over any gap instead of clicking, and adds or drops a
+sample now and then to stay in step with the laptop's clock. Its stats show
+at the bottom of the window. Use `python3 audio_stream.py --host IP` if the
+`.local` name does not resolve.
+
 ## Update over Wi-Fi
 
 After one USB flash of this firmware, both boards can be updated over the local

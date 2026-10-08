@@ -4,6 +4,7 @@
   python3 ota.py anchor
   python3 ota.py tag      # asks the anchor to wake the tag's Wi-Fi first
   python3 ota.py anchor2  # also anchor3, anchor4, tag2, tag3, ...; woken by anchor 1 over UWB
+  python3 ota.py audio_stream  # the Wi-Fi speaker board
 """
 import argparse
 import socket
@@ -20,7 +21,8 @@ _secrets = (ROOT / 'firmware' / 'secrets.h')
 _match = _secrets.exists() and re.search(r'OTA_PASSWORD\[\]\s*=\s*"([^"]*)"', _secrets.read_text())
 PASSWORD = _match.group(1) if _match else None
 HOSTS = {'anchor': 'uwb-anchor.local', 'tag': 'uwb-tag.local', 'anchor2': 'uwb-anchor2.local',
-         'anchor3': 'uwb-anchor3.local', 'anchor4': 'uwb-anchor4.local'}
+         'anchor3': 'uwb-anchor3.local', 'anchor4': 'uwb-anchor4.local',
+         'audio_stream': 'uwb-speaker.local'}  # Wi-Fi always on; no wake needed
 NODES = {'tag': 2, 'anchor2': 3, 'anchor3': 4, 'anchor4': 5}
 # Tag N (N >= 2) is node N + 4, firmware/tagN, hostname uwb-tagN.
 for n in range(2, 10):
@@ -56,12 +58,19 @@ def main():
                     '--fqbn', 'esp32:esp32:esp32', '--libraries', str(ROOT / 'third_party'),
                     '--output-dir', str(build), str(ROOT / 'firmware' / args.board)], check=True)
 
+    # A board with AUDIO_STREAM keeps Wi-Fi on; only wake the others.
+    awake = None
     if args.board in NODES:
+        try:
+            awake = socket.getaddrinfo(HOSTS[args.board], 3232, socket.AF_INET)[0][4][0]
+        except OSError:
+            pass
+    if args.board in NODES and not awake:
         anchor = args.anchor if args.anchor[0].isdigit() else resolve(args.anchor, 10)
         urllib.request.urlopen(urllib.request.Request(
             f'http://{anchor}/api/tag-update?node={NODES[args.board]}', data=b''), timeout=5).read()
         print(f'{args.board} asked to join Wi-Fi; it stays in update mode for up to 10 minutes.')
-    ip = args.ip or resolve(HOSTS[args.board], 60)
+    ip = args.ip or awake or resolve(HOSTS[args.board], 60)
     print(f'Uploading to {args.board} at {ip}…')
     result = subprocess.run([sys.executable, str(ESPOTA), '-i', ip, '-p', '3232', '-a', PASSWORD,
                              '-f', str(build / f'{args.board}.ino.bin')])
