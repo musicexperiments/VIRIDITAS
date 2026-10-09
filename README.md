@@ -190,9 +190,9 @@ port windows first.
 ## Stream audio to a board's speaker
 
 A board with the MAX98357A amp (wired as in `firmware/speaker_test`) can play
-16 kHz mono 16-bit audio sent over UDP port 4220. Tag 4 does this while it keeps
-ranging: `firmware/tag4` defines `AUDIO_STREAM`, which keeps its Wi-Fi on (as
-`uwb-tag4.local`, so `ota.py tag4` needs no wake-up from the anchor). Any other
+16 kHz mono 16-bit audio sent over UDP port 4220. Tags 1-4 do this while they keep
+ranging: `firmware/tag` to `firmware/tag4` define `AUDIO_STREAM`, which keeps their Wi-Fi on (as
+`uwb-tag.local` to `uwb-tag4.local`, so `ota.py tag` to `ota.py tag4` need no wake-up from the anchor). Any other
 board can do the same with that one line. `firmware/audio_stream` is a speaker
 only, with no UWB, as `uwb-speaker.local`. The audio code is in
 `firmware/audio_stream.h`.
