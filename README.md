@@ -1,8 +1,10 @@
 # VIRIDITAS
 
-One ESP32/DW3000 anchor, one ESP32/DW3000 tag, and a live wireless distance
-display. The anchor joins the Wi-Fi network set in `firmware/secrets.h`, ranges with the tag, and
-hosts the web app. The Mac can remain connected to the same router by Ethernet.
+Four ESP32/DW3000 anchors, up to four ESP32/DW3000 tags, and a live view in the
+Mac's terminal. Anchor 1 joins the Wi-Fi network set in `firmware/secrets.h`,
+schedules all the ranging and streams every reading to the Mac, which places
+the tags and sends them out as OSC. The Mac can remain connected to the same
+router by Ethernet.
 
 ## Flash the boards
 
@@ -22,24 +24,41 @@ After flashing, the boards only need power. The tag responds to UWB ranging
 requests. The anchor continuously measures the distance and sends the result
 over Wi-Fi.
 
-## View the distance
+## Run it
 
-With the Mac connected by Ethernet to the same router, open:
+```sh
+./startUwb.sh                 # the terminal view (+ SuperCollider if SOUND=1), anchor 1 at 10.10.10.183
+./startUwb.sh 10.10.10.200    # or give anchor 1's IP / hostname
+python3 uwb.py                # just the terminal view (it includes the OSC bridge)
+```
 
-<http://uwb-anchor.local>
+`uwb.py` starts with the anchor layout menu (below), then shows the live view:
 
-The page shows the tag-to-anchor distance in feet, centered in large bold type,
-with one decimal place. If the name does not resolve, open the anchor's numeric
-IP address instead. It is printed to the serial monitor at startup and is also
-visible in the router's client list.
+- The anchors' shape in its real proportions, Anchor 1 top-left, each anchor
+  green when online and red when offline, and the sides labelled in feet.
+- Each tag drawn where its `x`, `y` put it, with a short trail.
+- A row per tag: online or offline, exactly the `x`, `y`, `inside` and `dNK`
+  being sent, and its distance to each anchor in feet.
+- The UWB anchor-to-anchor distances next to the tape-measured ones, with the
+  difference highlighted when it is more than half a foot.
+
+Keys: `l` back to the layout menu, `s` smoothing on/off, `,` `.` `[` `]` `h`
+`0` tune the smoothing (below), space freezes the view, `q` quits. Ctrl-Z is
+ignored, since a paused bridge would stop sending OSC. The OSC keeps sending the whole time, including while the
+menu is open. SuperCollider's sound is off for now; set `SOUND=1` at the top
+of `startUwb.sh` to start it with everything else. It then writes its output
+to `build/sclang.log`, and `q` stops it too.
+
+If `.local` names do not resolve, use anchor 1's numeric IP address. It is
+printed to the serial monitor at startup and is also visible in the router's
+client list.
 
 The router must allow traffic between its Wi-Fi and Ethernet clients. Do not
 put the ESP32 on an isolated guest network.
 
 The anchor starts ranging even if Wi-Fi cannot connect. It retries the router
 every 15 seconds and logs Wi-Fi disconnect reasons and its assigned IP over
-serial at 115200 baud. The browser retries failed requests without accumulating
-overlapping polls. On startup, the anchor also logs matching access points and
+serial at 115200 baud. On startup, the anchor also logs matching access points and
 their signal strengths to help distinguish reception from authentication issues.
 
 ## Anchors and tags
@@ -61,7 +80,7 @@ Tag N (N ≥ 2) is node N + 4, `firmware/tagN` and `uwb-tagN`. To add a tag:
 2. Create `firmware/tagN/tagN.ino` with `#define NODE_ID <N+4>`.
 3. USB-flash the new tag once, then run `python3 ota.py anchor`.
 
-The website picks up new tags automatically.
+`uwb.py` and `osc_bridge.py` pick up new tags automatically.
 
 Anchor 1 measures every pair that includes a tag each cycle: each tag to
 each anchor, and every tag to every other tag. With four tags that is 22
@@ -79,29 +98,31 @@ their rate. It is probed once a second and rejoins on its own. For a pair that d
 asks one of the two boards to range the other and relay the result, and the
 two boards take turns starting. `/api/ranges` returns every pair.
 
-The main page prints the tag's X and Y in large type, in grid units without
-a unit label. The same position in feet is shown underneath. Below is a map
-of the anchors' real shape: true proportions, Anchor 1 top-left, each side
-labelled in feet, with the grid lines mapped onto it. A caption names the
-shape, for example "4.00 × 6.00 ft rectangle". By default (0,0) is the center of the space, and the
-anchors sit at the corners of a square. Anchor 1 is top-left (-1,1), and the
-rest go clockwise: Anchor 2 (1,1), Anchor 3 (1,-1), Anchor 4 (-1,-1). The
-feet shown are distances from the center. The grid
-values are editable under **Anchor positions**. With four anchors forming a
-convex shape, a perspective map puts each anchor exactly on its grid corner, so
-any four-sided space (square, rectangle, trapezoid or irregular) spans -1 to 1
-and its physical size does not matter. With three anchors, or a shape that is
-not convex, a least-squares affine fit is used instead.
-Under **Anchor positions**,
-choose **Rectangle or square** and enter only the tape-measured width
-(Anchor 1 to Anchor 2) and height (Anchor 2 to Anchor 3). The other sides and
-the diagonals follow from those. For any other layout, choose **Other shape**
-and enter the distance between each pair of anchors: all four sides and both
-diagonals, or at least five. The page builds the real shape (square,
-rectangle or any other), maps it onto the grid corners and saves it to
-`web/layout.json`. It warns if the distances do not fit together. With no
-distances saved, it falls back to a live median of the UWB anchor-to-anchor
-distances.
+### Anchor layout
+
+The anchors sit at the corners of the grid. Anchor 1 is top-left (-1, 1), and
+the rest go clockwise: Anchor 2 (1, 1), Anchor 3 (1, -1), Anchor 4 (-1, -1);
+(0, 0) is the center. With four anchors forming a convex shape, a perspective
+map puts each anchor exactly on its grid corner, so any four-sided space
+(square, rectangle, trapezoid or irregular) spans -1 to 1 and its physical size
+does not matter. With three anchors, or a shape that is not convex, a
+least-squares affine fit is used instead.
+
+`uwb.py`'s menu shows the saved layout and offers:
+
+- **Enter**: keep it.
+- **r**: rectangle or square. Enter only the tape-measured width (Anchor 1 to
+  Anchor 2) and height (Anchor 2 to Anchor 3); the rest follow.
+- **o**: any other shape. Enter the distance between each pair of anchors,
+  all four sides and at least one diagonal. It warns if they do not fit
+  together.
+- **u**: forget the saved layout and use a live median of the UWB
+  anchor-to-anchor distances.
+
+Each prompt shows what the UWB currently reads for that pair, for comparison.
+The tape measurements are what the positions use. The layout is saved to
+`layout.json` (not committed).
+
 The tag is the least-squares fit to its distances from every anchor. The
 anchors and the tag are assumed to be at the same height (a flat, 2D
 problem), so mount the anchors at about the height where the tag is worn. A
@@ -113,7 +134,8 @@ because they set the baseline. Every board uses the same antenna delay
 ## OSC output
 
 `osc_bridge.py` sends each tag's position and its distances to the other tags
-as OSC, straight from Anchor 1 (the website is not involved):
+as OSC, straight from Anchor 1. `uwb.py` runs the same bridge with the live
+view on top; on its own, it just logs:
 
 ```sh
 python3 osc_bridge.py                 # /tagN -> 127.0.0.1:8999+N (/tag1 on 9000)
@@ -130,7 +152,7 @@ message, about 20 per second per tag with four tags. The message goes to
 {"x": 0.24, "y": -0.18, "inside": 1, "d12": 0.33, "d13": 0.58, "d14": "N/A"}
 ```
 
-- `x`, `y`: -1 to 1 across the anchor grid, the same frame as the website:
+- `x`, `y`: -1 to 1 across the anchor grid:
   A1 (-1, 1), A2 (1, 1), A3 (1, -1), A4 (-1, -1); the center is (0, 0).
   A tag outside the shape reads as the nearest edge.
 - `inside`: 1 while the tag is within the anchor shape, 0 when it is outside.
@@ -138,18 +160,45 @@ message, about 20 per second per tag with four tags. The message goes to
 - `dNK`: the directly measured distance from tag N to tag K, divided by the
   farthest distance in the anchor shape (1 = as far apart as the shape
   allows).
-- `"N/A"`: no reading in the last second. Every key is always present;
-  unavailable values are `"N/A"`, never omitted.
+- `"N/A"`: no reading in the last second (with smoothing: fewer than three
+  anchors in the last 0.3 s, for longer than the 0.5 s hold). Every key is
+  always present; unavailable values are `"N/A"`, never omitted.
 
 Every tag's port stays open. `/tag1` to `/tag4` (`--tags N` for more) always
 send at least twice a second, even when that tag is offline, anchor 1 is
 unreachable, or no layout is saved. In those cases every value is `"N/A"`, so
 a receiver never holds a stale position.
 
-Positions use each newest reading, unsmoothed, for the least latency.
-`--smooth` uses the 5-reading median instead: steadier, with about 0.5 s more
-lag. `--osc-host` and `--osc-port` change the destination. The anchor layout
-comes from `web/layout.json`, as saved under **Anchor positions**.
+### Smoothing
+
+On by default, all on the laptop (no reflashing). Each step targets something
+the hardware really does:
+
+1. **Spikes.** A reflection makes a reading metres too long. A reading that
+   jumps further than a person can move since the median of the last three
+   good ones is dropped, unless the next readings agree on it (a real jump).
+2. **A blocked anchor.** A body in the way makes one anchor read long. With
+   four anchors, each is checked against the fix from the other three; the
+   one reading too long is left out (shown as "A3 left out" in the view).
+3. **Fresh readings only.** A fix uses readings from the last 0.3 s, not 1 s:
+   an older one is out of date for someone walking.
+4. **One Euro filter** on the position and the tag-to-tag distances: heavy
+   smoothing when still, less the faster the tag moves, so it keeps up.
+5. **Hold.** When a tag briefly has fewer than three anchors, its last position
+   is sent for up to 0.5 s before `"N/A"`.
+
+On simulated readings with the real layout's size and typical UWB faults
+(`python3 tests/test_smoothing.py report`), standing still goes from 2.2 m to
+8.5 cm (95% of positions within that distance of the center), and walking from
+72 cm to 15 cm average error, with about 0.07 s of lag.
+
+In the view: `s` smoothing on/off · `,` calmer / `.` livelier when standing
+still · `[` slower / `]` faster to follow movement · `h` hold time (0, 0.25,
+0.5, 1 s) · `0` back to the defaults. The settings are saved to `filter.json`
+(not committed), which `osc_bridge.py` also reads; `--raw` turns smoothing off.
+`--smooth` additionally uses anchor 1's own 5-reading median for every range:
+steadier, with about 0.5 s more lag. `--osc-host` and `--osc-port` change the destination. The anchor layout
+comes from `layout.json`, as saved by `uwb.py`'s layout menu.
 
 ## Simulator
 
@@ -229,34 +278,6 @@ asks the anchor to wake the tag over UWB. The tag then joins Wi-Fi as
 paused. Without an upload, it reboots into normal ranging. Updates use the
 password in `OTA_PASSWORD` (`firmware/ranging.h`). Use `--ip` or `--anchor`
 if a `.local` name does not resolve.
-
-## Website on the laptop
-
-The pages are also in `web/` and run on the Mac. Edits there take effect after
-a browser reload, with no reflashing. The local server forwards the `/api`
-requests to the anchor over Wi-Fi:
-
-```sh
-python3 web/server.py                      # finds uwb-anchor.local
-python3 web/server.py --anchor 10.10.10.183  # or use the anchor's IP
-```
-
-Then open <http://localhost:8000> for the distance and
-<http://localhost:8000/calibrate> for the antenna delay.
-
-### Calibrating across distances
-
-The antenna delay shifts every reading by the same amount. The error at close
-range changes with distance, so one delay cannot fix every distance. On
-`/calibrate`:
-
-1. Measure every distance you use, for example 1, 1.5, 2, 3, 4, 5 and 5.5 ft
-   for a 4×4 ft square. Then press **Apply best delay**. This sets the delay
-   that makes the average error zero.
-2. Clear the table and measure the same distances again. Then press **Save as
-   correction**. The pages map each reading onto the tape-measured distances
-   in between (`web/correction.json`). The correction only applies at the
-   delay it was measured with.
 
 ## Accuracy firmware
 

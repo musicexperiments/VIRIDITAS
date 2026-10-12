@@ -2,6 +2,6 @@
 build/
 firmware/*/build/
 .arduino/
-web/correction.json
-web/layout.json
+layout.json
 firmware/secrets.h
+filter.json

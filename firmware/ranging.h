@@ -148,6 +148,7 @@ struct Pair {
   RangeMath::Median5 filter;
   double rawCm = 0, filteredCm = 0;
   uint32_t at = 0, sequence = 0, failed = 0;
+  uint32_t triedAt = 0;   // When this pair was last scheduled.
   bool reversed = false;  // Relayed pairs alternate which node initiates.
 };
 // Every pair once; anchor 1 initiates its own pairs, and the two nodes of any
@@ -203,9 +204,28 @@ static bool nodeOnline(uint8_t node) {
 }
 
 // Skip pairs with a board that has gone quiet, so an offline tag or anchor does
-// not slow everyone else down; probe it once a second so it rejoins quickly.
-static const uint32_t PROBE_MS = 1000;
+// not slow everyone else down; probe it so it rejoins quickly. A board heard in
+// the last 10 s (blocked by a body, say) is probed 4 times a second, one never
+// heard or long gone once a second.
+static const uint32_t PROBE_MS = 1000, PROBE_RECENT_MS = 250, RECENT_MS = 10000;
 static uint32_t lastProbe[NODE_COUNT + 1] = {};
+
+static uint32_t probeInterval(uint8_t node) {
+  return lastHeard[node] != 0 && millis() - lastHeard[node] < RECENT_MS ? PROBE_RECENT_MS : PROBE_MS;
+}
+
+// The node's pair with an online partner that was tried longest ago, so probes
+// rotate across partners: one blocked anchor cannot keep a tag offline.
+static int probePairFor(uint8_t node) {
+  int best = -1;
+  for (uint8_t i = 0; i < PAIR_COUNT; ++i) {
+    const Pair &pair = pairs[i];
+    if (pair.a != node && pair.b != node) continue;
+    if (!nodeOnline(pair.a == node ? pair.b : pair.a)) continue;
+    if (best < 0 || static_cast<int32_t>(pair.triedAt - pairs[best].triedAt) < 0) best = i;
+  }
+  return best;
+}
 
 static int nextScheduledPair() {
   for (uint8_t tries = 0; tries <= PAIR_COUNT; ++tries) {
@@ -213,10 +233,12 @@ static int nextScheduledPair() {
     const Pair &pair = pairs[index];
     bool ok = true;
     for (uint8_t node : {pair.a, pair.b})
-      if (!nodeOnline(node) && millis() - lastProbe[node] < PROBE_MS) ok = false;
+      if (!nodeOnline(node) && (millis() - lastProbe[node] < probeInterval(node) || probePairFor(node) != index))
+        ok = false;
     if (!ok) continue;
     for (uint8_t node : {pair.a, pair.b})
       if (!nodeOnline(node)) lastProbe[node] = millis();
+    pairs[index].triedAt = millis();
     return index;
   }
   return -1;
@@ -232,6 +254,8 @@ static void recordRange(uint8_t a, uint8_t b, bool ok, double cm) {
   Pair *pair = findPair(a, b);
   if (!pair) return;
   if (!ok || !isfinite(cm) || cm < 0 || cm > 10000) { ++pair->failed; return; }
+  // A range proves both boards are up, even when anchor 1 only heard the relay.
+  lastHeard[a] = lastHeard[b] = millis();
   if (!pairValid(*pair)) pair->filter.reset();
   pair->rawCm = cm;
   pair->filteredCm = pair->filter.push(cm);
@@ -252,7 +276,7 @@ static void setAntennaDelay(uint16_t delay);
 
 static void startWebServer() {
   webServer.on("/", HTTP_GET, []() {
-    webServer.send(200, "text/plain", "UWB anchor. Open the website on the laptop: python3 web/server.py\n");
+    webServer.send(200, "text/plain", "UWB anchor. On the laptop run: python3 uwb.py\n");
   });
   // Anchor-1-to-tag pair (pairs[0]), kept for the calibration page and check_accuracy.py.
   webServer.on("/api/distance", HTTP_GET, []() {

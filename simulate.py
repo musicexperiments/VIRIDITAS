@@ -12,7 +12,7 @@ x and y run -1 to 1 across the shape (A1 (-1, 1), A2 (1, 1), A3 (1, -1), A4 (-1,
 the distance from tag N to tag K divided by the shape's diagonal. The data
 behaves like the hardware: a few centimetres of noise, an occasional missing
 tag-to-tag reading, and "N/A" when two people are within a few inches.
-Anchor 1 is the top-left corner, then clockwise, as on the website.
+Anchor 1 is the top-left corner, then clockwise, as in uwb.py.
 
 /tag1-/tag4 always send, even with fewer people: a tag with nobody sends
 every key as "N/A". The people you choose stay online the whole time.
