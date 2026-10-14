@@ -1,0 +1,9 @@
+{
+  "additionalFiles": "",
+  "compiler.optimization_flags": "-Os",
+  "customBuildProperties": "",
+  "fqbn": "esp32:esp32:esp32",
+  "hardwareFolders": "/Users/meatmini/Desktop/VIRIDITAS/.arduino/data/packages/esp32/hardware/esp32/3.3.12,/Users/meatmini/Desktop/VIRIDITAS/.arduino/data/packages/esp32/hardware/esp32/3.3.12",
+  "otherLibrariesFolders": "/Users/meatmini/Desktop/VIRIDITAS/third_party,/Users/meatmini/Desktop/VIRIDITAS/.arduino/user/libraries",
+  "sketchLocation": "/Users/meatmini/Desktop/VIRIDITAS/firmware/audio_stream"
+}

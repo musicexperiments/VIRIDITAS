@@ -9,6 +9,11 @@ what it sends. On start, a menu keeps the saved anchor layout or takes new
 tape-measured distances (saved to layout.json). Then a live view: the anchors at
 their corners (Anchor 1 top-left, clockwise), each tag where its x, y put it,
 every tag's message, and the UWB anchor-to-anchor distances next to the tape.
+With --sound-script (startUwb.sh with SOUND=1), SuperCollider runs that script
+(Four Tags FX) once the layout menu is done, since it draws its pad from
+layout.json, and again whenever the layout is changed from the view; q stops it.
+A line in the view shows whether it is running and which tags' speakers it is
+streaming to.
 
 The OSC keeps sending the whole time, including while the layout menu is open.
 Keys: l layout menu · s smoothing on/off · , . calmer/livelier when still ·
@@ -19,8 +24,11 @@ Ctrl-Z is ignored: pausing would stop the OSC.
 import curses
 import json
 import math
+import os
+import re
 import signal
 import statistics
+import subprocess
 import threading
 import time
 
@@ -31,6 +39,8 @@ FT = 30.48
 ANCHORS = {1: 'A1', 3: 'A2', 4: 'A3', 5: 'A4'}  # node -> name, clockwise from top-left
 SIDES = [(1, 3), (3, 4), (4, 5), (1, 5), (1, 4), (3, 5)]  # four sides, then both diagonals
 TRAIL = 14
+SCLANG = '/Applications/SuperCollider.app/Contents/MacOS/sclang'
+SOUND = {'speakers': set()}  # Four Tags FX's streaming speakers, refreshed by watch_sound
 
 
 def pair_name(a, b):
@@ -153,6 +163,84 @@ def pump(bridge, listener, stop, lock):
                 last_layout = now
 
 
+# ---------- Sound ----------
+
+class Sound:
+    """SuperCollider running the sound script (Four Tags FX). It draws its pad
+    from layout.json, so it starts only once the layout menu is done, and
+    restarts when the layout file has changed since it started. It gets the
+    bridge's settings: this folder, the SuperCollider base port, and
+    FOUR_TAGS_STANDALONE=1 (stream to every tag's speaker; closing its window quits)."""
+
+    def __init__(self, args):
+        self.args, self.proc, self.layout_mtime = args, None, None
+
+    def running(self):
+        return self.proc is not None and self.proc.poll() is None
+
+    def ensure(self):
+        """Start it, or restart it if the layout has changed since it started."""
+        if not self.args.sound_script:
+            return
+        mtime = LAYOUT.stat().st_mtime if LAYOUT.exists() else None
+        if self.running() and mtime == self.layout_mtime:
+            return
+        if self.running():
+            print('The anchor layout changed: restarting SuperCollider…')
+            self.stop()
+        log = osc_bridge.ROOT / (self.args.sound_log or 'build/sclang.log')
+        log.parent.mkdir(exist_ok=True)
+        env = dict(os.environ, VIRIDITAS_DIR=str(osc_bridge.ROOT), FOUR_TAGS_STANDALONE='1',
+                   UWB_SC_PORT=str(self.args.also_port[0] if self.args.also_port else 9100))
+        print(f'Starting SuperCollider ({os.path.basename(self.args.sound_script)}), log in {log}…')
+        with open(log, 'w') as out:
+            self.proc = subprocess.Popen([SCLANG, self.args.sound_script], cwd=osc_bridge.ROOT, env=env,
+                                         stdin=subprocess.DEVNULL, stdout=out, stderr=subprocess.STDOUT)
+        self.layout_mtime = mtime
+
+    def stop(self):
+        """Stop sclang and what it started (its audio server and the speakers' streamers)."""
+        if not self.running():
+            return
+        children = subprocess.run(['pgrep', '-P', str(self.proc.pid)], capture_output=True, text=True).stdout.split()
+        for pid in [int(p) for p in children] + [self.proc.pid]:
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except OSError:
+                pass
+        deadline = time.monotonic() + 3
+        for pid in [int(p) for p in children]:
+            while time.monotonic() < deadline:
+                try:
+                    os.kill(pid, 0)
+                except OSError:
+                    break
+                time.sleep(0.1)
+            else:
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                except OSError:
+                    pass
+        try:
+            self.proc.wait(max(0.1, deadline - time.monotonic()))
+        except subprocess.TimeoutExpired:
+            self.proc.kill()
+            self.proc.wait()
+        self.proc = None
+
+
+def watch_sound(stop):
+    """Every 2 s: which tags' speakers Four Tags FX is streaming to (one
+    audio_stream.py per tag: uwb-tag.local is tag 1, uwb-tagN.local tag N)."""
+    while not stop.is_set():
+        try:
+            found = subprocess.run(['pgrep', '-lf', 'audio_stream.py'], capture_output=True, text=True, timeout=2).stdout
+        except (OSError, subprocess.SubprocessError):
+            found = ''
+        SOUND['speakers'] = {int(n or 1) for n in re.findall(r'--host uwb-tag(\d*)\.', found)}
+        stop.wait(2)
+
+
 # ---------- Live view ----------
 
 def draw(screen, bridge, args, state):
@@ -197,14 +285,48 @@ def draw(screen, bridge, args, state):
         put(2, 1, 'Smoothing OFF', warn | bold)
         put(2, 15, '· raw positions, spikes and all (s turns it on)', dim)
 
+    # Anchors online, as anchor 1 last reported, with how long ago a UWB
+    # reading last came in from each (yellow after 2 s).
+    put(3, 1, 'Anchors', bold)
+    up_count = 0
+    for i, node in enumerate(ANCHORS):
+        up = bool(online.get(node))
+        up_count += up
+        status = 'online' if up else 'offline' if online or bridge.anchor_error else '?'
+        attr = good if up else dim if status == '?' else bad | bold
+        c = 10 + 21 * i
+        put(3, c, '●', attr | bold)
+        put(3, c + 2, f'{ANCHORS[node]} {status}', attr)
+        heard = [t for pair, (_, t) in bridge.ranges.items() if node in pair]
+        if heard:
+            age = now - max(heard)
+            put(3, c + 13, f'{age:.1f}s' if age < 60 else '>1m', dim if age < 2 else warn)
+    put(3, 10 + 21 * len(ANCHORS), f'{up_count}/{len(ANCHORS)} online',
+        (good if up_count == len(ANCHORS) else bad) | bold)
+
+    # Sound: Four Tags FX, and which tags' speakers it streams to.
+    put(4, 1, 'Sound', bold)
+    if not args.sound_script:
+        put(4, 10, 'off (SOUND=1 in startUwb.sh starts Four Tags FX)', dim)
+    elif not state['sound'].running():
+        put(4, 10, f'● Four Tags FX not running (see {args.sound_log})', bad | bold)
+    else:
+        put(4, 10, '● Four Tags FX', good | bold)
+        put(4, 25, 'speakers', dim)
+        for i, tag in enumerate(tags):
+            streaming = tag in SOUND['speakers']
+            put(4, 34 + 5 * i, f'● T{tag}', good if streaming else bad | bold)
+        put(4, 35 + 5 * len(tags), f'· /tagN → {args.osc_host}:{args.also_port[0] if args.also_port else "–"}+ · '
+                                   f'log {args.sound_log}', dim)
+
     # Map: real proportions from the layout, Anchor 1 top-left.
     width = math.dist(pos[1], pos[3]) if 1 in pos and 3 in pos else 1
     height = math.dist(pos[3], pos[4]) if 3 in pos and 4 in pos else 1
     info_rows = len(tags) + 9
-    map_rows, map_cols = max(5, rows - info_rows - 4), cols - 12
+    map_rows, map_cols = max(5, rows - info_rows - 6), cols - 12
     scale = min(map_cols / width, 2 * map_rows / height)  # cells are about twice as tall as wide
     box_w, box_h = max(4, round(width * scale)), max(2, round(height * scale / 2))
-    left, top = max(5, (cols - box_w) // 2), 4
+    left, top = max(5, (cols - box_w) // 2), 6
     for c in range(left, left + box_w + 1):
         put(top, c, '─', dim); put(top + box_h, c, '─', dim)
     for r in range(top, top + box_h + 1):
@@ -301,7 +423,7 @@ def tune(bridge, key):
     bridge.save_filter()
 
 
-def view(screen, bridge, args, lock):
+def view(screen, bridge, args, lock, sound):
     curses.curs_set(0)
     curses.start_color()
     curses.use_default_colors()
@@ -310,7 +432,7 @@ def view(screen, bridge, args, lock):
         curses.init_pair(i, color, -1)
     curses.init_pair(9, curses.COLOR_WHITE, -1)
     screen.timeout(100)
-    state = {'trails': {}, 'frozen': False, 'rate': 0.0, 'spike_rate': {}}
+    state = {'trails': {}, 'frozen': False, 'rate': 0.0, 'spike_rate': {}, 'sound': sound}
     rate_window = [time.monotonic(), bridge.total_sent, {}]
     while True:
         key = screen.getch()
@@ -344,26 +466,37 @@ def view(screen, bridge, args, lock):
 
 
 def main():
-    args = osc_bridge.make_parser(__doc__).parse_args()
+    parser = osc_bridge.make_parser(__doc__)
+    parser.add_argument('--sound-script', help='SuperCollider script to run once the layout is set (Four Tags FX)')
+    parser.add_argument('--sound-log', default='build/sclang.log', help="SuperCollider's log")
+    args = parser.parse_args()
     # Ctrl-Z would pause the bridge and silently stop the OSC (with the ports still held).
     signal.signal(signal.SIGTSTP, signal.SIG_IGN)
     bridge, listener, stop = osc_bridge.start(args)
     bridge.load_filter()
     lock = threading.Lock()
     threading.Thread(target=pump, args=(bridge, listener, stop, lock), daemon=True).start()
+    sound = Sound(args)
+    if args.sound_script:
+        threading.Thread(target=watch_sound, args=(stop,), daemon=True).start()
     time.sleep(1.5)  # A moment of anchor-to-anchor readings for the menu's UWB hints.
     try:
         result = 'layout'
         while True:
-            if result == 'layout' and not layout_menu(bridge, lock):
-                break
-            result = curses.wrapper(view, bridge, args, lock)
+            if result == 'layout':
+                if not layout_menu(bridge, lock):
+                    break
+                sound.ensure()  # Only now: Four Tags FX draws its pad from the layout.
+            result = curses.wrapper(view, bridge, args, lock, sound)
             if result == 'quit':
                 break
     except (KeyboardInterrupt, EOFError):
         pass
     finally:
         stop.set()
+        if sound.running():
+            print('\nStopping SuperCollider…')
+            sound.stop()
     print('\nStopped.')
 
 

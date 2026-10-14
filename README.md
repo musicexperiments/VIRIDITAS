@@ -34,6 +34,9 @@ python3 uwb.py                # just the terminal view (it includes the OSC brid
 
 `uwb.py` starts with the anchor layout menu (below), then shows the live view:
 
+- An anchor status line along the top: each anchor online (green) or offline
+  (red) as anchor 1 reports it, how long ago its last UWB reading came in
+  (yellow after 2 s), and how many of the four are online.
 - The anchors' shape in its real proportions, Anchor 1 top-left, each anchor
   green when online and red when offline, and the sides labelled in feet.
 - Each tag drawn where its `x`, `y` put it, with a short trail.
@@ -45,9 +48,21 @@ python3 uwb.py                # just the terminal view (it includes the OSC brid
 Keys: `l` back to the layout menu, `s` smoothing on/off, `,` `.` `[` `]` `h`
 `0` tune the smoothing (below), space freezes the view, `q` quits. Ctrl-Z is
 ignored, since a paused bridge would stop sending OSC. The OSC keeps sending the whole time, including while the
-menu is open. SuperCollider's sound is off for now; set `SOUND=1` at the top
-of `startUwb.sh` to start it with everything else. It then writes its output
-to `build/sclang.log`, and `q` stops it too.
+menu is open.
+
+With `SOUND=1` at the top of `startUwb.sh` (the default), the sound is
+SuperCollider's Four Tags FX, `supercollider/four-tags-fx.scd`. It starts once
+the layout menu is done, since its pad is drawn from `layout.json`, and
+restarts if the layout is changed later. Each tag's dot follows `/tagN`, a
+dropped tag is hidden and muted, and each tag's sound streams to its own
+speaker. It writes its output to `build/sclang.log`, and `q` stops it too.
+`SOUND=0` leaves the sound off.
+
+Everything it needs is in `supercollider/`: the four synths (`SynthDefs/`)
+and their patterns (`pbind-demos/`) from SCLOrkSynths, and copies of the two
+sc3-plugins packages it uses (`plugins/`: Greyhole in DEINDUGens, Squiz in
+MCLDUGens). On a Mac without sc3-plugins, copy those two folders into
+`~/Library/Application Support/SuperCollider/Extensions`.
 
 If `.local` names do not resolve, use anchor 1's numeric IP address. It is
 printed to the serial monitor at startup and is also visible in the router's
@@ -278,6 +293,32 @@ asks the anchor to wake the tag over UWB. The tag then joins Wi-Fi as
 paused. Without an upload, it reboots into normal ranging. Updates use the
 password in `OTA_PASSWORD` (`firmware/ranging.h`). Use `--ip` or `--anchor`
 if a `.local` name does not resolve.
+
+Anchors 2-4 that hear nothing from anchor 1 over UWB for 60 s (anchor 1 off,
+or on different radio settings) join Wi-Fi in the same update mode on their
+own, so they can always be reached with `ota.py`.
+
+## Radio settings
+
+`UWB_ROBUST` at the top of `firmware/ranging.h` picks the UWB settings, and
+every board must run the same one (boards on different settings cannot hear
+each other):
+
+- `1` (now): 1024-symbol preamble, 850 kbps, PAC 32. Each frame takes ~1.3 ms
+  instead of ~0.2 ms, but it reaches further and copes much better with
+  bodies and walls. In the first test, tag 1's links failed 0-1% of the time
+  instead of 20-98%, with no drops in a minute.
+- `0`: the DW3000 library's defaults: 128-symbol preamble, 6.8 Mbps, PAC 8.
+
+Both use channel 5 and preamble code 9. The library cannot set the robust
+values itself, so `configureRobustRadio()` writes them after `DW3000.init()`;
+`http://uwb-anchor.local/api/radio` shows what anchor 1's radio is set to,
+and where failed exchanges stopped.
+
+To change the setting on boards that range with each other over UWB: flash
+anchors 2-4 and the tags first, while anchor 1 can still wake them, and
+anchor 1 last. Tags with `AUDIO_STREAM` keep Wi-Fi on and can be flashed any
+time.
 
 ## Accuracy firmware
 

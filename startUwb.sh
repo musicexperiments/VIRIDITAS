@@ -1,7 +1,14 @@
 #!/bin/bash
-# Start everything for the UWB setup: SuperCollider in the background (when
-# SOUND=1 below) and the terminal view (uwb.py: anchor layout, live map, OSC
-# bridge) in this window.
+# Start everything for the UWB setup: the terminal view (uwb.py: anchor layout,
+# live map, OSC bridge) in this window and, when SOUND=1 below, SuperCollider's
+# Four Tags FX in the background (its window opens on its own).
+#
+# Four Tags FX draws its pad from the anchor layout, so uwb.py starts it only
+# once the layout menu is done (and restarts it if the layout is changed later
+# from the view). Both get the same settings from here: the tag count, the base
+# port the bridge sends /tag1-/tagN to for SuperCollider, and this folder
+# (layout.json, audio_stream.py). Four Tags FX moves each tag's dot from /tagN
+# and streams each tag's sound to that tag's speaker.
 #
 #   ./startUwb.sh                  # anchor 1 at 10.10.10.183
 #   ./startUwb.sh 10.10.10.200     # or give anchor 1's IP / hostname
@@ -11,14 +18,15 @@
 cd "$(dirname "$0")" || exit 1
 
 ANCHOR="${1:-10.10.10.183}"
-SOUND=0  # 1 starts SuperCollider (supercollider/sine.scd); 0 leaves the sound off.
-SCLANG="/Applications/SuperCollider.app/Contents/MacOS/sclang"
+SOUND=1  # 1 starts SuperCollider (Four Tags FX, SC_SCRIPT); 0 leaves the sound off.
+SC_SCRIPT="$PWD/supercollider/four-tags-fx.scd"   # with its SynthDefs/ and pbind-demos/ beside it
+TAGS=4         # /tag1 to /tagN, always sent
+SC_PORT=9100   # /tag1 to SuperCollider on this port, /tag2 on the next, ...
 SCLANG_LOG="build/sclang.log"
-# UDP 4210 bridge (from anchor 1) · UDP 9100 sine.scd ·
-# UDP 57110 audio server (scsynth) · UDP 57120 sclang
-PORTS_UDP=(4210 9100 57110 57120)
-
-sclang_pid=
+# UDP 4210 bridge (from anchor 1) · UDP 9100-9103 Four Tags FX's /tagN ·
+# UDP 57110 audio server (scsynth) · UDP 57120 sclang ·
+# UDP 57200-57203 each tag's audio_stream.py status
+PORTS_UDP=(4210 $(seq "$SC_PORT" $((SC_PORT + TAGS - 1))) 57110 57120 $(seq 57200 $((57200 + TAGS - 1))))
 
 port_users() {
   for p in "${PORTS_UDP[@]}"; do lsof -nP -t -iUDP:"$p" 2>/dev/null; done
@@ -28,19 +36,8 @@ stopping=
 stop() {
   [ -n "$stopping" ] && return
   stopping=1
-  if [ -n "$sclang_pid" ]; then
-    echo "Stopping SuperCollider..."
-    # sclang's audio server (scsynth) is its child; stop it with sclang.
-    pkill -TERM -P "$sclang_pid" 2>/dev/null
-    kill -TERM "$sclang_pid" 2>/dev/null
-    for _ in 1 2 3 4 5 6 7 8 9 10; do
-      kill -0 "$sclang_pid" 2>/dev/null || break
-      sleep 0.3
-    done
-    kill -KILL "$sclang_pid" 2>/dev/null
-    wait 2>/dev/null
-  fi
-  # Anything that ignored the polite request, or still holds one of our ports.
+  # uwb.py stops SuperCollider when it quits; this catches anything left
+  # (uwb.py killed, say) that still holds one of our ports.
   left=$(port_users | sort -u)
   if [ -n "$left" ]; then
     kill -KILL $left 2>/dev/null
@@ -67,16 +64,15 @@ if [ -n "$busy" ]; then
   exit 1
 fi
 
+sound=()
 if [ "$SOUND" != 1 ]; then
   echo "SuperCollider sound is off (SOUND=0 in startUwb.sh)."
-elif [ -x "$SCLANG" ]; then
-  mkdir -p build
-  echo "SuperCollider (supercollider/sine.scd), log in $SCLANG_LOG..."
-  "$SCLANG" -D supercollider/sine.scd </dev/null >"$SCLANG_LOG" 2>&1 &
-  sclang_pid=$!
+elif [ ! -f "$SC_SCRIPT" ]; then
+  echo "SuperCollider script not found at $SC_SCRIPT; skipping it."
 else
-  echo "SuperCollider not found at $SCLANG; skipping it."
+  echo "SuperCollider ($(basename "$SC_SCRIPT")) starts once the anchor layout is set, log in $SCLANG_LOG."
+  sound=(--sound-script "$SC_SCRIPT" --sound-log "$SCLANG_LOG")
 fi
 
 # The terminal view runs the OSC bridge: /tagN -> 9000+ (Unreal) and 9100+ (SuperCollider).
-python3 uwb.py --anchor "$ANCHOR"
+python3 uwb.py --anchor "$ANCHOR" --tags "$TAGS" --also-port "$SC_PORT" "${sound[@]}"

@@ -48,6 +48,13 @@ static uint32_t startedAt = 0;
 static uint64_t lastTx = 0, pollTx = 0, responseTx = 0, pollRx = 0;
 static uint32_t roundTime = 0, replyTime = 0, responderDelay = 0;
 
+// UWB radio settings, the same on every board (boards on different settings
+// cannot hear each other). 1: robust: 1024-symbol preamble, 850 kbps, PAC 32,
+// for range and blocked links, at ~1.3 ms per frame instead of ~0.2 ms.
+// 0: the DW3000 library's defaults: 128-symbol preamble, 6.8 Mbps, PAC 8.
+// Both: channel 5, preamble code 9 (64 MHz PRF), standard 8-symbol SFD.
+#define UWB_ROBUST 1
+
 // One value for TX and RX on every board; the anchor pushes it in each poll.
 static const uint16_t DEFAULT_ANTENNA_DELAY = 16400;
 static Preferences settings;
@@ -88,6 +95,10 @@ static const uint32_t UPDATE_WINDOW_MS = 10 * 60 * 1000;
 static bool updateMode = false;
 static bool updateOtaStarted = false;
 static uint32_t updateModeAt = 0;
+// A board that hears nothing from anchor 1 over UWB for this long (on other
+// radio settings, say) joins Wi-Fi in update mode, so it can still be updated.
+static const uint32_t ANCHOR1_SILENT_MS = 60 * 1000;
+static uint32_t lastFromAnchor1 = 0;
 
 static void enterUpdateMode() {
   DW3000.forceIdle();
@@ -183,6 +194,7 @@ static uint8_t nextPairInCycle() {
   return pair;
 }
 static uint32_t lastHeard[NODE_COUNT + 1] = {};
+static uint32_t abortsInState[5] = {};  // failed exchanges, by the state they stopped in
 static uint8_t updateNode = 0;
 static uint32_t updateRequestedAt = 0;
 
@@ -310,6 +322,27 @@ static void startWebServer() {
       json += item;
     }
     json += "]}";
+    webServer.sendHeader("Cache-Control", "no-store");
+    webServer.send(200, "application/json", json);
+  });
+  // The radio registers as set, and where failed exchanges stopped (for tuning
+  // the UWB settings): idle = the poll could not be sent, wait_response = no
+  // response to the poll, wait_report = no report after the final, wait_result
+  // = no result from a relayed pair.
+  webServer.on("/api/radio", HTTP_GET, []() {
+    char json[320];
+    snprintf(json, sizeof(json),
+             "{\"robust\":%d,\"tx_fctrl\":\"0x%08lx\",\"sfd_toc\":%lu,\"dtune0\":\"0x%04lx\",\"otp_cfg\":\"0x%04lx\","
+             "\"sys_cfg\":\"0x%08lx\",\"aborts\":{\"idle\":%lu,\"wait_response\":%lu,\"wait_report\":%lu,"
+             "\"wait_final\":%lu,\"wait_result\":%lu}}",
+             UWB_ROBUST, static_cast<unsigned long>(DW3000.read(GEN_CFG_AES_LOW_REG, 0x24)),
+             static_cast<unsigned long>(DW3000.read(DRX_REG, 0x02) & 0xFFFF),
+             static_cast<unsigned long>(DW3000.read(DRX_REG, 0x00) & 0xFFFF),
+             static_cast<unsigned long>(DW3000.read(OTP_IF_REG, 0x08) & 0xFFFF),
+             static_cast<unsigned long>(DW3000.read(GEN_CFG_AES_LOW_REG, 0x10)),
+             static_cast<unsigned long>(abortsInState[IDLE]), static_cast<unsigned long>(abortsInState[WAIT_RESPONSE]),
+             static_cast<unsigned long>(abortsInState[WAIT_REPORT]), static_cast<unsigned long>(abortsInState[WAIT_FINAL]),
+             static_cast<unsigned long>(abortsInState[WAIT_RESULT]));
     webServer.sendHeader("Cache-Control", "no-store");
     webServer.send(200, "application/json", json);
   });
@@ -474,6 +507,7 @@ static bool transmit(uint8_t destination, uint8_t step, const uint8_t *payload =
 static void abortExchange() {
 #if NODE_ID == 1
   ++pairs[currentPair].failed;
+  ++abortsInState[state < 5 ? state : 0];
 #endif
   listenForUwb();
 }
@@ -513,6 +547,8 @@ static void handleFrame() {
   const uint8_t sender = DW3000.getSenderID(), step = DW3000.ds_getStage();
 #if NODE_ID == 1
   if (sender >= 2 && sender <= NODE_COUNT) lastHeard[sender] = millis();
+#else
+  if (sender == 1) lastFromAnchor1 = millis();
 #endif
   if (DW3000.getDestinationID() != NODE_ID || DW3000.ds_isErrorFrame() || sender == NODE_ID) {
     rearmReceiver();
@@ -574,6 +610,30 @@ static void handleFrame() {
   }
 }
 
+#if UWB_ROBUST
+// The library's setters OR the preamble length and data rate into TX_FCTRL
+// without clearing the defaults (1024 would become 4096, 850 kbps stay 6.8),
+// and it fixes the SFD timeout at 129 symbols (right for 128 only), so these
+// are written here after DW3000.init(). Values per the DW3000 user manual.
+static void configureRobustRadio() {
+  // TX_FCTRL (0x00:24): TXBR bit 10 (0 = 850 kbps), TXPSR bits 12-15 (preamble length code)
+  uint32_t fctrl = DW3000.read(GEN_CFG_AES_LOW_REG, 0x24);
+  fctrl = (fctrl & ~((0xFUL << 12) | (1UL << 10))) | (uint32_t(PREAMBLE_1024) << 12) | (uint32_t(DATARATE_850KB) << 10);
+  DW3000.write(GEN_CFG_AES_LOW_REG, 0x24, fctrl);
+  // DTUNE0 (0x06:00) PRE_PAC, bits 0-1: PAC 32 (the library's setPACSize does not stick)
+  const uint32_t dtune0 = DW3000.read(DRX_REG, 0x00) & 0xFFFF;
+  DW3000.write(DRX_REG, 0x00, (dtune0 & ~0x3UL) | PAC32, 2);
+  // RX_SFD_TOC (0x06:02): preamble length + 1 + SFD length - PAC size = 1024 + 1 + 8 - 32
+  DW3000.write(DRX_REG, 0x02, 1001, 2);
+  // OTP_CFG (0x0B:08): load the receiver's operating parameters for long
+  // preambles (OPS_SEL bits 11-12 = 0, "long") with OPS_KICK (bit 10)
+  uint32_t otp = DW3000.read(OTP_IF_REG, 0x08) & 0xFFFF;
+  DW3000.write(OTP_IF_REG, 0x08, (otp & ~0x1800UL) | 0x0400, 2);
+  Serial.printf("UWB,robust,fctrl=0x%08lx,sfd_toc=%lu\n", static_cast<unsigned long>(DW3000.read(GEN_CFG_AES_LOW_REG, 0x24)),
+                static_cast<unsigned long>(DW3000.read(DRX_REG, 0x02) & 0xFFFF));
+}
+#endif
+
 void setup() {
   Serial.begin(115200);
   settings.begin("uwb");
@@ -599,6 +659,9 @@ void setup() {
   delay(200);
   while (!DW3000.checkForIDLE()) delay(10);
   DW3000.init();
+#if UWB_ROBUST
+  configureRobustRadio();
+#endif
   DW3000.setupGPIO();
   DW3000.configureAsTX();
   DW3000.setSenderID(NODE_ID);
@@ -612,6 +675,13 @@ void loop() {
   if (updateMode) { serviceUpdateMode(); return; }
 #ifdef AUDIO_STREAM
   if (state == IDLE) serviceAudioWifi();  // outside exchanges, like anchor 1's Wi-Fi
+#else
+  // Wi-Fi is the only other way in: open it if anchor 1 has gone quiet over UWB.
+  if (state == IDLE && millis() - lastFromAnchor1 >= ANCHOR1_SILENT_MS) {
+    Serial.println("OTA,anchor1_silent");
+    enterUpdateMode();
+    return;
+  }
 #endif
 #else
   // Keep HTTP work outside exchanges; then start the next pair's exchange.
