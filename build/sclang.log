@@ -7,7 +7,7 @@ compiling class library...
 	method table size 20758744 bytes, big table size 156826320
 	Number of Symbols 14986
 	Byte Code Size 449906
-	compiled 556 files in 0.18 seconds
+	compiled 556 files in 0.23 seconds
 compile done
 localhost : setting clientID to 0.
 internal : setting clientID to 0.
@@ -39,87 +39,368 @@ Requested notification messages from server 'localhost'
 localhost: server process's maxLogins (1) matches with my options.
 localhost: keeping clientID (0) as confirmed by server process.
 Shared memory server interface initialized
-STREAM,board,10.10.10.94:4220
-STREAM,server,48000 Hz -> 16000 Hz
 STREAM,board,10.10.10.185:4220
 STREAM,server,48000 Hz -> 16000 Hz
-STREAM,board,10.10.10.82:4220
-STREAM,server,48000 Hz -> 16000 Hz
-STREAM,board,10.10.10.22:4220
-STREAM,server,48000 Hz -> 16000 Hz
-SPEAKER,fill=4.6,received=26879,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-48
-SPEAKER,fill=4.8,received=26889,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-51
-SPEAKER,fill=5.0,received=271767,recovered=0,concealed=152,late=1,drift=+161/-0,rebuffers=5,rssi=-53
-SPEAKER,fill=4.8,received=26941,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-58
-SPEAKER,fill=4.4,received=27382,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-49
-SPEAKER,fill=4.7,received=27391,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-49
-SPEAKER,fill=5.0,received=272269,recovered=0,concealed=152,late=1,drift=+161/-0,rebuffers=5,rssi=-50
-SPEAKER,fill=4.8,received=27443,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-55
-SPEAKER,fill=4.3,received=27885,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-57
-SPEAKER,fill=4.6,received=27891,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-50
-SPEAKER,fill=5.0,received=272770,recovered=0,concealed=152,late=1,drift=+161/-0,rebuffers=5,rssi=-51
-SPEAKER,fill=4.7,received=27944,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-59
-SPEAKER,fill=4.3,received=28385,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-53
-SPEAKER,fill=4.6,received=28393,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-52
-SPEAKER,fill=5.0,received=273272,recovered=0,concealed=152,late=1,drift=+161/-0,rebuffers=5,rssi=-49
-SPEAKER,fill=4.8,received=28448,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-56
-SPEAKER,fill=4.3,received=28887,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-54
-SPEAKER,fill=4.6,received=28896,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-53
-SPEAKER,fill=5.0,received=273775,recovered=0,concealed=152,late=1,drift=+161/-0,rebuffers=5,rssi=-48
-SPEAKER,fill=4.8,received=28951,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-56
-SPEAKER,fill=4.3,received=29390,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-57
-SPEAKER,fill=4.7,received=29397,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-53
-SPEAKER,fill=5.0,received=274278,recovered=0,concealed=152,late=1,drift=+161/-0,rebuffers=5,rssi=-50
-SPEAKER,fill=4.8,received=29452,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-58
-SPEAKER,fill=4.3,received=29891,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-59
-SPEAKER,fill=4.7,received=29900,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-52
-SPEAKER,fill=5.0,received=274781,recovered=0,concealed=152,late=1,drift=+161/-0,rebuffers=5,rssi=-49
-SPEAKER,fill=4.8,received=29956,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-60
-SPEAKER,fill=4.3,received=30394,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-66
-SPEAKER,fill=4.6,received=30403,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-52
-SPEAKER,fill=5.0,received=275283,recovered=0,concealed=152,late=1,drift=+161/-0,rebuffers=5,rssi=-49
-SPEAKER,fill=4.8,received=30457,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-58
-SPEAKER,fill=4.3,received=30898,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-60
-SPEAKER,fill=4.7,received=30906,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-52
-SPEAKER,fill=5.0,received=275785,recovered=0,concealed=152,late=1,drift=+161/-0,rebuffers=5,rssi=-49
-SPEAKER,fill=4.8,received=30958,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-59
-SPEAKER,fill=4.4,received=31402,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-47
-SPEAKER,fill=4.7,received=31409,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-59
-SPEAKER,fill=5.0,received=276287,recovered=0,concealed=152,late=1,drift=+161/-0,rebuffers=5,rssi=-48
-SPEAKER,fill=4.8,received=31460,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-58
-SPEAKER,fill=4.4,received=31903,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-47
-SPEAKER,fill=4.7,received=31910,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-53
-SPEAKER,fill=5.0,received=276790,recovered=0,concealed=152,late=1,drift=+161/-0,rebuffers=5,rssi=-44
-SPEAKER,fill=4.8,received=31961,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-64
-SPEAKER,fill=4.4,received=32406,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-47
-SPEAKER,fill=4.7,received=32412,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-55
-SPEAKER,fill=5.0,received=277293,recovered=0,concealed=152,late=1,drift=+161/-0,rebuffers=5,rssi=-44
-SPEAKER,fill=4.8,received=32463,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-62
-SPEAKER,fill=4.4,received=32910,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-47
-SPEAKER,fill=4.7,received=32914,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-54
-SPEAKER,fill=5.0,received=277794,recovered=0,concealed=152,late=1,drift=+161/-0,rebuffers=5,rssi=-44
-SPEAKER,fill=4.8,received=32964,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-61
-SPEAKER,fill=4.4,received=33413,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-47
-SPEAKER,fill=4.7,received=33416,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-55
-SPEAKER,fill=5.0,received=278295,recovered=0,concealed=152,late=1,drift=+161/-0,rebuffers=5,rssi=-44
-SPEAKER,fill=4.8,received=33466,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-62
-SPEAKER,fill=4.4,received=33915,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-47
-SPEAKER,fill=4.7,received=33919,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-55
-SPEAKER,fill=5.0,received=278800,recovered=0,concealed=152,late=1,drift=+161/-0,rebuffers=5,rssi=-43
-SPEAKER,fill=4.8,received=33967,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-62
-SPEAKER,fill=4.4,received=34416,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-46
-SPEAKER,fill=4.7,received=34422,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-59
-SPEAKER,fill=5.0,received=279302,recovered=0,concealed=152,late=1,drift=+161/-0,rebuffers=5,rssi=-44
-SPEAKER,fill=4.8,received=34469,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-62
-SPEAKER,fill=4.4,received=34918,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-44
-SPEAKER,fill=4.7,received=34923,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-52
-SPEAKER,fill=5.0,received=279804,recovered=0,concealed=152,late=1,drift=+161/-0,rebuffers=5,rssi=-43
-SPEAKER,fill=4.8,received=34972,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-64
-SPEAKER,fill=4.4,received=35420,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-45
-SPEAKER,fill=4.7,received=35426,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-50
-SPEAKER,fill=5.0,received=280308,recovered=0,concealed=152,late=1,drift=+161/-0,rebuffers=5,rssi=-42
-SPEAKER,fill=4.8,received=35475,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-58
-SPEAKER,fill=4.4,received=35922,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-46
-SPEAKER,fill=4.7,received=35927,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-53
-SPEAKER,fill=5.0,received=280811,recovered=0,concealed=152,late=1,drift=+161/-0,rebuffers=5,rssi=-45
-SPEAKER,fill=4.8,received=35979,recovered=0,concealed=30,late=0,drift=+0/-0,rebuffers=1,rssi=-57
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=4.4,received=541,recovered=0,concealed=0,late=0,drift=+0/-0,rebuffers=0,rssi=-32
+SPEAKER,fill=4.3,received=1043,recovered=0,concealed=0,late=0,drift=+0/-0,rebuffers=0,rssi=-55
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+SPEAKER,fill=4.2,received=1545,recovered=0,concealed=5,late=5,drift=+0/-0,rebuffers=0,rssi=-53
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=4.2,received=2048,recovered=0,concealed=5,late=5,drift=+0/-0,rebuffers=0,rssi=-55
+SPEAKER,fill=4.1,received=2550,recovered=0,concealed=6,late=6,drift=+0/-0,rebuffers=0,rssi=-60
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag2.local
+SPEAKER,fill=4.2,received=3052,recovered=0,concealed=6,late=6,drift=+0/-0,rebuffers=0,rssi=-57
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=4.2,received=3554,recovered=0,concealed=6,late=6,drift=+0/-0,rebuffers=0,rssi=-66
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=4.2,received=4057,recovered=0,concealed=6,late=6,drift=+0/-0,rebuffers=0,rssi=-61
+SPEAKER,fill=4.2,received=4559,recovered=0,concealed=6,late=6,drift=+0/-0,rebuffers=0,rssi=-53
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag2.local
+SPEAKER,fill=4.1,received=5061,recovered=0,concealed=6,late=6,drift=+0/-0,rebuffers=0,rssi=-60
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=4.1,received=5566,recovered=0,concealed=6,late=6,drift=+0/-0,rebuffers=0,rssi=-62
+SPEAKER,fill=4.2,received=6068,recovered=0,concealed=6,late=6,drift=+0/-0,rebuffers=0,rssi=-50
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+SPEAKER,fill=4.1,received=6570,recovered=0,concealed=6,late=6,drift=+0/-0,rebuffers=0,rssi=-67
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=4.1,received=7073,recovered=0,concealed=7,late=7,drift=+0/-0,rebuffers=0,rssi=-73
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=4.7,received=7572,recovered=0,concealed=24,late=21,drift=+162/-0,rebuffers=0,rssi=-58
+SPEAKER,fill=5.7,received=8074,recovered=0,concealed=24,late=21,drift=+162/-0,rebuffers=0,rssi=-52
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.9,received=8577,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-67
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.5,received=9080,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-60
+SPEAKER,fill=5.3,received=9581,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-62
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.2,received=10084,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-61
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.2,received=10586,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-57
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.2,received=11089,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-64
+SPEAKER,fill=5.2,received=11591,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-54
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.2,received=12093,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-53
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+SPEAKER,fill=5.2,received=12596,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-59
+SPEAKER,fill=5.2,received=13097,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-51
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag2.local
+SPEAKER,fill=5.2,received=13598,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-60
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.2,received=14101,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-64
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.2,received=14603,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-60
+SPEAKER,fill=5.2,received=15105,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-60
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag2.local
+SPEAKER,fill=5.2,received=15608,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-54
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.2,received=16111,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-45
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.2,received=16613,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-56
+SPEAKER,fill=5.3,received=17115,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-46
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.3,received=17617,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-46
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.3,received=18120,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-51
+SPEAKER,fill=5.3,received=18622,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-51
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.3,received=19125,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-50
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.3,received=19626,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-49
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.3,received=20128,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-50
+SPEAKER,fill=5.3,received=20632,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-51
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.3,received=21134,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-51
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.3,received=21637,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-51
+SPEAKER,fill=5.3,received=22139,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-50
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.3,received=22641,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-50
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.3,received=23142,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-51
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.3,received=23645,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-44
+SPEAKER,fill=5.3,received=24146,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-45
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.3,received=24649,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-45
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.3,received=25152,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-45
+SPEAKER,fill=5.3,received=25653,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-45
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.3,received=26156,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-42
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.3,received=26658,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-43
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.3,received=27160,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-43
+SPEAKER,fill=5.3,received=27661,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-42
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.3,received=28164,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-63
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.4,received=28665,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-56
+SPEAKER,fill=5.4,received=29167,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-46
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.3,received=29669,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-70
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.4,received=30172,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-64
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+SPEAKER,fill=5.3,received=30773,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-54
+SPEAKER,fill=5.4,received=31274,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-56
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.3,received=31777,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-61
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.3,received=32281,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-53
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.4,received=32782,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-61
+SPEAKER,fill=5.3,received=33284,recovered=1,concealed=25,late=22,drift=+162/-2,rebuffers=0,rssi=-61
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.3,received=33787,recovered=1,concealed=25,late=22,drift=+162/-2,rebuffers=0,rssi=-50
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.4,received=34289,recovered=1,concealed=25,late=22,drift=+162/-2,rebuffers=0,rssi=-47
+SPEAKER,fill=5.3,received=34792,recovered=1,concealed=25,late=22,drift=+162/-2,rebuffers=0,rssi=-56
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.3,received=35295,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-59
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag2.local
+SPEAKER,fill=5.3,received=35798,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-47
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+SPEAKER,fill=5.4,received=36302,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-51
+SPEAKER,fill=5.4,received=36803,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-47
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+SPEAKER,fill=5.4,received=37304,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-46
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag2.local
+SPEAKER,fill=5.4,received=37806,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-59
+SPEAKER,fill=5.4,received=38308,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-60
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.4,received=38809,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-57
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.4,received=39310,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-60
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.4,received=39812,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-60
+SPEAKER,fill=5.3,received=40315,recovered=1,concealed=34,late=31,drift=+162/-2,rebuffers=0,rssi=-60
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.3,received=40816,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-61
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.4,received=41317,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-61
+SPEAKER,fill=5.4,received=41818,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-61
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.4,received=42319,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-61
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.4,received=42821,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-60
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.4,received=43326,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-63
+SPEAKER,fill=5.4,received=43829,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-58
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.4,received=44331,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-60
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.5,received=44833,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-58
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.5,received=45335,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-60
+SPEAKER,fill=5.4,received=45838,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-61
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.4,received=46340,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-56
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag2.local
+SPEAKER,fill=5.4,received=46842,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-47
+SPEAKER,fill=5.5,received=47345,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-47
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.5,received=47847,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-56
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+STREAM,waiting,cannot find uwb-tag2.local
+SPEAKER,fill=5.5,received=48450,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-50
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.5,received=48953,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-54
+SPEAKER,fill=5.5,received=49456,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-51
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.5,received=49958,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-53
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.5,received=50459,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-56
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.5,received=50962,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-57
+SPEAKER,fill=5.5,received=51463,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-64
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.5,received=51965,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-61
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.5,received=52467,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-55
+SPEAKER,fill=5.5,received=52971,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-53
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.5,received=53472,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-50
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.5,received=53975,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-61
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.5,received=54478,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-59
+SPEAKER,fill=5.5,received=54981,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-57
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.6,received=55482,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-52
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.5,received=55984,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-50
+SPEAKER,fill=5.5,received=56485,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-44
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.5,received=56988,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-47
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
+SPEAKER,fill=5.5,received=57490,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-46
+STREAM,waiting,cannot find uwb-tag3.local
+STREAM,waiting,cannot find uwb-tag2.local
+STREAM,waiting,cannot find uwb-tag4.local
