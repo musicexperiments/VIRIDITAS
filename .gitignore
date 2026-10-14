@@ -5,3 +5,4 @@ firmware/*/build/
 layout.json
 firmware/secrets.h
 filter.json
+supercollider/media/

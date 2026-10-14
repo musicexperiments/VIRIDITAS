@@ -18,7 +18,7 @@ streaming to.
 The OSC keeps sending the whole time, including while the layout menu is open.
 Keys: l layout menu · s smoothing on/off · , . calmer/livelier when still ·
 [ ] slower/faster to follow movement · h hold time · 0 smoothing defaults ·
-space freeze the view · q quit. Smoothing settings are saved to filter.json.
+space freeze the view · q or Esc quit. Smoothing settings are saved to filter.json.
 Ctrl-Z is ignored: pausing would stop the OSC.
 """
 import curses
@@ -104,6 +104,8 @@ def layout_menu(bridge, lock):
           + ('   u) use live UWB' if bridge.distances else '') + '   q) quit')
     while True:
         choice = input('Choose [Enter]: ').strip().lower()
+        if choice.startswith('\x1b'):  # Esc quits like q
+            choice = 'q'
         if choice in ('', 'r', 'o', 'q') or (choice == 'u' and bridge.distances):
             break
         print('  Choose Enter, r, o' + (', u' if bridge.distances else '') + ' or q.')
@@ -395,7 +397,7 @@ def draw(screen, bridge, args, state):
             put(r, c + 6, text + (f' / {tape / FT:6.2f}' if tape else ''), dim)
 
     put(rows - 1, 1, ('FROZEN · ' if state['frozen'] else '') +
-        'l layout · s smoothing on/off · , . [ ] h 0 tune it · space freeze · q quit', dim)
+        'l layout · s smoothing on/off · , . [ ] h 0 tune it · space freeze · q/Esc quit', dim)
     screen.refresh()
 
 
@@ -429,11 +431,12 @@ def view(screen, bridge, args, lock, sound):
         curses.init_pair(i, color, -1)
     curses.init_pair(9, curses.COLOR_WHITE, -1)
     screen.timeout(100)
+    curses.set_escdelay(25)  # a lone Esc arrives quickly instead of after 1 s
     state = {'trails': {}, 'frozen': False, 'rate': 0.0, 'spike_rate': {}, 'sound': sound}
     rate_window = [time.monotonic(), bridge.total_sent, {}]
     while True:
         key = screen.getch()
-        if key in (ord('q'), ord('Q')):
+        if key in (ord('q'), ord('Q'), 27):  # 27 is Esc
             return 'quit'
         if key in (ord('l'), ord('L')):
             return 'layout'

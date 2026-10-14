@@ -57,6 +57,12 @@
 //   layout.json and audio_stream.py are), UWB_SC_PORT (the base port, 9100) and
 //   FOUR_TAGS_STANDALONE=1 (stream to all four tags at once; closing the window
 //   quits). Run from the IDE, the defaults below are used instead.
+// - media/viriditas_day.wav loops forever on this computer's output from the
+//   moment the window opens (not on the tags, and not affected by Play / Stop
+//   or "Play on this computer"); closing the window stops it.
+// - Mixer window (opens beside it; m closes / reopens it): a level meter for
+//   the soundscape (viriditas_day.wav) and for each tag (what goes to its
+//   speaker), with a volume fader under each. A dropped tag reads silent.
 
 (
 // this folder (VIRIDITAS/supercollider): the SynthDefs and pbind-demos it loads are here
@@ -77,6 +83,8 @@ s.waitForBoot {
 	var simulate = false, motion, padW, padH, room, tagXY, tagHeard, holdS = 3;
 	var toPixIn, drawPad, full, fullView, toggleFull, refreshPads, keys;
 	var winW, winH, colW = 470, rowStep = 110, contentH, bottomY;
+	var dayBuf, daySynth, dayAmp = 1;
+	var mixWin, meters, makeMixer, volSpec = ControlSpec(0, 2, \amp);
 
 	[
 		"SynthDefs/percussion/kalimba.scd", "pbind-demos/kalimba-demo.scd",
@@ -243,13 +251,22 @@ s.waitForBoot {
 
 	// ---------- one per tag: volume, then to the laptop and into the tag's ring buffer ----------
 
-	SynthDef(\ftMixer, { |in, bufnum = 900, posBus = 900, vol = 0.8, laptop = 1|
+	SynthDef(\ftMixer, { |in, bufnum = 900, posBus = 900, vol = 0.8, laptop = 1, id = 0|
 		var sig = In.ar(in, 2) * vol.lag(0.1);
 		var mono = Limiter.ar(sig.sum * 0.7, 0.9);
 		var phase = Phasor.ar(0, 1, 0, BufFrames.kr(bufnum));
+		SendPeakRMS.kr(mono, 20, 3, '/ftLevel', id);   // the mixer window's meter for this tag
 		BufWr.ar(mono, bufnum, phase);
 		Out.kr(posBus, A2K.kr(phase));
 		Out.ar(0, sig * laptop.lag(0.05));
+	}).add;
+
+	// ---------- the day recording, looped forever on the laptop ----------
+
+	SynthDef(\ftDayLoop, { |buf, amp = 1|
+		var sig = PlayBuf.ar(2, buf, BufRateScale.kr(buf), loop: 1) * amp.lag(0.1);   // the file is 44.1 kHz, the server may not be
+		SendPeakRMS.kr(sig, 20, 3, '/ftLevel', 4);   // the mixer window's soundscape meter
+		Out.ar(0, sig);
 	}).add;
 
 	// ---------- the four tags ----------
@@ -398,11 +415,15 @@ s.waitForBoot {
 	sources = Group.head(s);
 	fxs = Group.after(sources);
 	mixers = Group.after(fxs);
-	voices.do { |v|
+	voices.do { |v, i|
 		v.fxGroup = Group.tail(fxs);
 		v.makeFx;
-		v.mixer = Synth(\ftMixer, [in: v.bus, bufnum: v.buf, posBus: v.buf, vol: 0, laptop: laptop], mixers);   // silent until its tag reports
+		v.mixer = Synth(\ftMixer, [in: v.bus, bufnum: v.buf, posBus: v.buf, vol: 0, laptop: laptop, id: i], mixers);   // silent until its tag reports
+		v[\hidden] = true;   // matches vol 0, so the first position (even before the first frame) turns it up
 	};
+	dayBuf = Buffer.read(s, dir +/+ "media/viriditas_day.wav");
+	s.sync;
+	daySynth = Synth.after(mixers, \ftDayLoop, [buf: dayBuf]);
 
 	// nearest C major note below or on a MIDI note: C# -> C, Eb -> D, F# -> F, Ab -> G, Bb -> A
 	snap = { |midi|
@@ -757,16 +778,70 @@ s.waitForBoot {
 		};
 	};
 
+	// --- mixer window: a meter and a volume fader for the soundscape and each tag ---
+	// meters 0-3 are the tags (what goes to their speakers), 4 the soundscape;
+	// they read -60 to 0 dB (RMS bar, peak line)
+	meters = nil ! 5;
+	OSCdef(\fourTagsFXLevel, { |msg|
+		var id = msg[2].asInteger, vals = msg[3..];
+		var peak = vals[0, 2..].maxItem, rms = vals[1, 3..].maxItem;
+		{
+			meters[id] !? { |m|
+				if(m[0].isClosed.not) {
+					m[0].value = rms.ampdb.linlin(-60, 0, 0, 1);
+					m[0].peakLevel = peak.ampdb.linlin(-60, 0, 0, 1);
+					m[1].string = if(peak < 0.001) { "-inf" } { peak.ampdb.round(0.1).asString };
+				}
+			}
+		}.defer;
+	}, '/ftLevel', s.addr);
+
+	makeMixer = {
+		var stripW = 92, h = 400;
+		var strips = voices.collect { |v, i| [v.tag, v.color, v.vol, { |a|
+			v.vol = a;
+			if(v[\hidden] != true) { v.mixer.set(\vol, a) };   // a dropped tag stays silent until it's back
+		}, i] } ++ [["Soundscape", Color.gray(0.85), dayAmp, { |a| dayAmp = a; daySynth.set(\amp, a) }, 4]];
+		mixWin = Window("Mixer", Rect(20 + winW + 10, 20, 12 + (stripW * strips.size), h), resizable: false);
+		mixWin.background = Color.gray(0.13);
+		strips.do { |st, k|
+			var x = 6 + (k * stripW), meter, peakText, fader, volText;
+			var showVol = { |a| volText.string = if(a < 0.001) { "-inf dB" } { "% dB".format(a.ampdb.round(0.1)) } };
+			UserView(mixWin, Rect(x, 6, stripW - 6, h - 12)).background_(Color.gray(0.17));
+			StaticText(mixWin, Rect(x, 10, stripW - 6, 20)).align_(\center)
+			.string_(st[0]).font_(font.(12, true)).stringColor_(st[1]);
+			meter = LevelIndicator(mixWin, Rect(x + ((stripW - 6 - 24) / 2), 34, 24, 200))
+			.drawsPeak_(true).warning_(0.9).critical_(0.95)   // yellow from -6 dB, red from -3 dB
+			.numTicks_(13).numMajorTicks_(4);
+			peakText = StaticText(mixWin, Rect(x, 238, stripW - 6, 16)).align_(\center)
+			.string_("-inf").font_(Font.monospace.size_(10)).stringColor_(Color.gray(0.75));
+			fader = Slider(mixWin, Rect(x + ((stripW - 6 - 22) / 2), 262, 22, 100))
+			.canFocus_(false)
+			.value_(volSpec.unmap(st[2]))
+			.action_({ |sl| var a = volSpec.map(sl.value); st[3].(a); showVol.(a) });
+			volText = StaticText(mixWin, Rect(x, 366, stripW - 6, 16)).align_(\center)
+			.font_(font.(11, true)).stringColor_(Color(1, 0.8, 0.4));
+			showVol.(st[2]);
+			meters[st[4]] = [meter, peakText];
+		};
+		mixWin.view.keyDownAction = keys;
+		mixWin.onClose = { mixWin = nil; meters = nil ! 5 };
+		mixWin.front;
+	};
+
 	keys = { |view, char|
 		case
 		{ char == $  } { playButton.valueAction = 1 - playButton.value; true }
 		{ (char == $f) or: { char == $F } } { toggleFull.(); true }
+		{ (char == $m) or: { char == $M } } { if(mixWin.notNil) { mixWin.close } { makeMixer.() }; true }
 		{ nil }
 	};
 	win.view.keyDownAction = keys;
 
 	win.onClose = {
 		full !? { full.close };
+		mixWin !? { mixWin.close };
+		OSCdef(\fourTagsFXLevel).free;
 		randomizers.do(_.stop);
 		motion.stop;
 		stop.();
@@ -780,6 +855,8 @@ s.waitForBoot {
 			OSCdef(("fourTagsFXStatus" ++ i).asSymbol).free;
 			OSCdef(("fourTagsFXUwb" ++ i).asSymbol).free;
 		};
+		daySynth.free;
+		dayBuf.free;
 		mixers.free;
 		fxs.free;
 		sources.free;
@@ -787,6 +864,7 @@ s.waitForBoot {
 	};
 
 	win.front;
+	makeMixer.();
 	if(~fourTagsFXStreamOnStart == true) { voices.do { |v| v.streamButton.valueAction = 1 } };
 	playButton.valueAction = 1;
 };
