@@ -355,7 +355,7 @@ def draw(screen, bridge, args, state):
     # Tags: exactly what is being sent, plus their distance to each anchor.
     row = top + box_h + 2
     put(row, 1, 'Tag    status   x        y        inside   A1     A2     A3     A4  (ft)   '
-                'smoothing      to other tags (0-1 of shape)', curses.A_UNDERLINE)
+                'smoothing', curses.A_UNDERLINE)
     for tag in tags:
         row += 1
         node, message = node_of(tag), bridge.last_message.get(tag, {})
@@ -378,9 +378,6 @@ def draw(screen, bridge, args, state):
         spikes = state['spike_rate'].get(node, 0)
         if tuning['on'] and spikes:
             put(row, 87 if stats.get('held') or stats.get('outvoted') else 78, f'{spikes:.0f} spk/s', dim)
-        others = '  '.join(f'{k}={v:.3f}' if isinstance(v, float) else f'{k}={v}'
-                           for k, v in message.items() if k.startswith('d'))
-        put(row, 93, others, 0 if live else dim)
 
     # Anchors: UWB against the tape.
     row += 2

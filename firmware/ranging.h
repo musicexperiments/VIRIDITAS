@@ -162,11 +162,11 @@ struct Pair {
   uint32_t triedAt = 0;   // When this pair was last scheduled.
   bool reversed = false;  // Relayed pairs alternate which node initiates.
 };
-// Every pair once; anchor 1 initiates its own pairs, and the two nodes of any
+// Every tag-to-anchor and anchor-to-anchor pair once (tag-to-tag distances are
+// not measured); anchor 1 initiates its own pairs, and the two nodes of any
 // other pair take turns initiating (a one-sided RF or node fault still gets
-// through from the other side). Pairs with a tag (tag-to-anchor and
-// tag-to-tag) come first and are ranged every cycle; the fixed anchor-to-anchor
-// pairs take one slot per cycle in turn.
+// through from the other side). Tag-to-anchor pairs come first and are ranged
+// every cycle; the fixed anchor-to-anchor pairs take one slot per cycle in turn.
 static Pair pairs[NODE_COUNT * (NODE_COUNT - 1) / 2];
 static uint8_t PAIR_COUNT = 0;
 static uint8_t tagPairCount = 0;
@@ -179,7 +179,7 @@ static void buildPairs() {
   for (int tagPass = 1; tagPass >= 0; --tagPass) {
     for (uint8_t a = 1; a <= NODE_COUNT; ++a)
       for (uint8_t b = a + 1; b <= NODE_COUNT; ++b)
-        if ((isTag(a) || isTag(b)) == tagPass) { pairs[count].a = a; pairs[count++].b = b; }
+        if (!(isTag(a) && isTag(b)) && (isTag(a) || isTag(b)) == tagPass) { pairs[count].a = a; pairs[count++].b = b; }
     if (tagPass) tagPairCount = count;
   }
   PAIR_COUNT = count;
@@ -708,7 +708,7 @@ void loop() {
     return;
   }
 #endif
-  // A relayed tag-to-tag exchange takes two exchanges' worth of time.
+  // A relayed exchange (anchor 1 asks another node to range) takes two exchanges' worth of time.
   if (state != IDLE && millis() - startedAt > (state == WAIT_RESULT ? 40u : 20u)) {
     abortExchange();
     return;

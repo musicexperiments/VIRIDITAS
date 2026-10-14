@@ -7,11 +7,9 @@ osc_bridge.py, so software can be written and tested without the hardware.
 A single file with no dependencies beyond Python 3 (standard library only).
 
 Each person is a tag: /tagN on UDP port 8999 + N (/tag1 on 9000, /tag2 on
-9001, ...) at 127.0.0.1, one JSON string argument {"x": .., "y": .., "inside": .., "dNK": ..}.
-x and y run -1 to 1 across the shape (A1 (-1, 1), A2 (1, 1), A3 (1, -1), A4 (-1, -1)); dNK is
-the distance from tag N to tag K divided by the shape's diagonal. The data
-behaves like the hardware: a few centimetres of noise, an occasional missing
-tag-to-tag reading, and "N/A" when two people are within a few inches.
+9001, ...) at 127.0.0.1, one JSON string argument {"x": .., "y": .., "inside": ..}.
+x and y run -1 to 1 across the shape (A1 (-1, 1), A2 (1, 1), A3 (1, -1), A4 (-1, -1)).
+The data behaves like the hardware: a few centimetres of noise.
 Anchor 1 is the top-left corner, then clockwise, as in uwb.py.
 
 /tag1-/tag4 always send, even with fewer people: a tag with nobody sends
@@ -73,8 +71,6 @@ def monitor(port):
 FT = 30.48             # cm per foot
 SEND_HZ = 20            # messages per tag per second, like the real bridge
 NOISE_CM = 3.0          # UWB-like noise
-DROP_RATE = 0.03        # chance a tag-to-tag reading is missing
-TOO_CLOSE_CM = 8.0      # tags this close cannot range each other
 HOST, FIRST_PORT = '127.0.0.1', 9000  # /tag1 -> 9000, /tag2 -> 9001, ...
 SC_FIRST_PORT = 9100  # the same messages for SuperCollider: /tag1 -> 9100, ...
 MIN_TAGS = 4  # Like the real bridge, /tag1-/tag4 always send; a tag with no person is all "N/A".
@@ -204,18 +200,7 @@ class Simulation:
     def noisy(self, value_ft):
         return value_ft if self.manual else value_ft + self.rng.gauss(0, NOISE_CM) / FT
 
-    def measure_pairs(self):
-        """One reading per pair of tags, shared by both tags (as on the hardware)."""
-        readings = {}
-        for i, a in enumerate(self.people):
-            for b in self.people[i + 1:]:
-                distance = math.hypot(a.x - b.x, a.y - b.y)
-                missing = distance * FT < TOO_CLOSE_CM or (not self.manual and self.rng.random() < DROP_RATE)
-                readings[(a.number, b.number)] = (
-                    MISSING if missing else round(min(1.0, max(0.0, self.noisy(distance)) / self.diagonal), 4))
-        return readings
-
-    def message(self, number, readings):
+    def message(self, number):
         """Every key is always present; unavailable values are "N/A"."""
         person = self.people[number - 1] if number <= len(self.people) else None
         if person is None:
@@ -224,15 +209,11 @@ class Simulation:
             x = min(1.0, max(-1.0, 2 * self.noisy(person.x) / self.width - 1))
             y = min(1.0, max(-1.0, 2 * self.noisy(person.y) / self.height - 1))
             data = {'x': round(x, 4) + 0.0, 'y': round(y, 4) + 0.0, 'inside': 1}  # People never leave the shape; + 0.0 avoids -0.0.
-        for other in range(1, self.tag_count + 1):
-            if other != number:
-                data[f'd{number}{other}'] = readings.get((min(number, other), max(number, other)), MISSING)
         return data
 
     def send_all(self):
-        readings = self.measure_pairs()
         for number in range(1, self.tag_count + 1):
-            data = self.message(number, readings)
+            data = self.message(number)
             text = json.dumps(data, separators=(', ', ': '))
             packet = osc_message(f'/tag{number}', text)
             for first in (FIRST_PORT, SC_FIRST_PORT):
@@ -408,12 +389,11 @@ def draw(screen, sim, paused, rate):
 
     # Values table: exactly what is being sent.
     row = top + box_h + 2
-    put(row, 1, 'Tag   X      Y      (feet)          distances to other tags (0-1 of diagonal)', curses.A_UNDERLINE)
+    put(row, 1, 'Tag   X      Y      (feet)', curses.A_UNDERLINE)
     for number in range(1, sim.tag_count + 1):
         row += 1
         data = sim.last_messages.get(number, {})
         fmt = lambda v: f'{v:.3f}' if isinstance(v, float) else str(v)
-        dists = '  '.join(f'{k}={fmt(v)}' for k, v in data.items() if k.startswith('d'))
         put(row, 1, f'/tag{number}', curses.color_pair(number) | curses.A_BOLD)
         if number == sim.controlled:
             put(row, 0, '›', curses.color_pair(number) | curses.A_BOLD)
@@ -423,7 +403,7 @@ def draw(screen, sim, paused, rate):
                 curses.color_pair(9) | curses.A_DIM)
             continue
         put(row, 7, f'{fmt(data.get("x", "-")):<6} {fmt(data.get("y", "-")):<6} '
-                    f'({person.x:5.2f}, {person.y:5.2f} ft)  {dists}' + ('  MOVED BY HAND' if person.manual else ''))
+                    f'({person.x:5.2f}, {person.y:5.2f} ft)' + ('  MOVED BY HAND' if person.manual else ''))
     put(row + 2, 1, ('PAUSED · ' if paused else '') + ('MANUAL · ' if sim.manual else '') + f'arrows move tag {sim.controlled} · 1-{len(sim.people)} pick tag · '
                     'a auto · space pause · m back to menu · q quit', curses.color_pair(9))
     screen.refresh()

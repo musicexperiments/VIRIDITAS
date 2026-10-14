@@ -40,8 +40,8 @@ python3 uwb.py                # just the terminal view (it includes the OSC brid
 - The anchors' shape in its real proportions, Anchor 1 top-left, each anchor
   green when online and red when offline, and the sides labelled in feet.
 - Each tag drawn where its `x`, `y` put it, with a short trail.
-- A row per tag: online or offline, exactly the `x`, `y`, `inside` and `dNK`
-  being sent, and its distance to each anchor in feet.
+- A row per tag: online or offline, exactly the `x`, `y` and `inside` being
+  sent, and its distance to each anchor in feet.
 - The UWB anchor-to-anchor distances next to the tape-measured ones, with the
   difference highlighted when it is more than half a foot.
 
@@ -164,7 +164,7 @@ message, about 20 per second per tag with four tags. The message goes to
 `/tagN` on port 8999 + N (`/tag1` on 9000), with one JSON string argument:
 
 ```
-{"x": 0.24, "y": -0.18, "inside": 1, "d12": 0.33, "d13": 0.58, "d14": "N/A"}
+{"x": 0.24, "y": -0.18, "inside": 1}
 ```
 
 - `x`, `y`: -1 to 1 across the anchor grid:
@@ -172,9 +172,10 @@ message, about 20 per second per tag with four tags. The message goes to
   A tag outside the shape reads as the nearest edge.
 - `inside`: 1 while the tag is within the anchor shape, 0 when it is outside.
   The simulator's people never leave, so it always sends 1.
-- `dNK`: the directly measured distance from tag N to tag K, divided by the
-  farthest distance in the anchor shape (1 = as far apart as the shape
-  allows).
+
+Distances between tags are not measured: anchor 1 only ranges tag-to-anchor
+(and, one at a time, anchor-to-anchor) pairs, which keeps each tag's readings
+coming as often as possible.
 - `"N/A"`: no reading in the last second (with smoothing: fewer than three
   anchors in the last 0.3 s, for longer than the 0.5 s hold). Every key is
   always present; unavailable values are `"N/A"`, never omitted.
@@ -197,7 +198,7 @@ the hardware really does:
    one reading too long is left out (shown as "A3 left out" in the view).
 3. **Fresh readings only.** A fix uses readings from the last 0.3 s, not 1 s:
    an older one is out of date for someone walking.
-4. **One Euro filter** on the position and the tag-to-tag distances: heavy
+4. **One Euro filter** on the position: heavy
    smoothing when still, less the faster the tag moves, so it keeps up.
 5. **Hold.** When a tag briefly has fewer than three anchors, its last position
    is sent for up to 0.5 s before `"N/A"`.
@@ -236,9 +237,7 @@ real bridge's.
 
 - `/tag1` to `/tag4` always send, even with fewer people. A tag with nobody
   sends every key as `"N/A"`.
-- The data behaves like the hardware: a few centimetres of noise, occasional
-  missing tag-to-tag readings, and `"N/A"` when two people are within a few
-  inches.
+- The data behaves like the hardware: a few centimetres of noise.
 - The people you choose stay online the whole time.
 
 It leaves anything already listening on its ports (Unreal Engine, for

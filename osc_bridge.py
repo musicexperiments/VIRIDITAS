@@ -7,11 +7,9 @@ range that involves a tag, the tag is re-located and one OSC message goes out:
 
   /tag1 -> port 9000, /tag2 -> 9001, ... (tag N on base port + N - 1)
   the same messages also go to 9100, 9101, ... for SuperCollider (--also-port)
-  argument: a JSON string {"x": .., "y": .., "inside": .., "d12": .., "d13": .., ...}
+  argument: a JSON string {"x": .., "y": .., "inside": ..}
 
 x and y run -1 to 1 across the anchors' grid: A1 (-1, 1), A2 (1, 1), A3 (1, -1), A4 (-1, -1).
-dNK is the directly measured distance from tag N to tag K, divided by the
-farthest distance in the anchor shape (so 1 = as far apart as the shape allows).
 A value that has not been read (no fresh range) is the string "N/A". Every
 tag's port keeps sending, twice a second at least, with every key present, even
 when that tag, anchor 1 or the anchor layout is unavailable.
@@ -21,7 +19,7 @@ Smoothing (on by default; --raw or filter.json turns it off):
      last good one (a reflection) is dropped, unless the next readings agree on it.
   2. Outvoted anchor: with four anchors, one whose distance does not fit the
      other three (blocked by a body, say) is left out of that fix.
-  3. One Euro filter on the position and the tag-to-tag distances: heavy
+  3. One Euro filter on the position: heavy
      smoothing when still, less the faster the tag moves, so it keeps up.
   4. Fresh readings only: a fix uses readings from the last 0.3 s (not 1 s), as
      an older one is out of date for a walking tag; when one round of ranging
@@ -277,7 +275,6 @@ class Bridge:
         self.gate_last = {}      # (a, b) -> the last three accepted (cm, time)
         self.gate_pending = {}   # (a, b) -> rejected readings since then
         self.point_filter = {}   # tag node -> OneEuro on its position (cm)
-        self.distance_filter = {}  # (a, b) tag pair -> (OneEuro, smoothed cm, time)
         self.held = {}           # tag node -> (x, y, inside, time of the fix)
         self.excess = {}         # tag node -> anchor -> its average excess reading (cm)
         self.agreement = {}      # tag node -> anchor -> average fit error of the others (cm)
@@ -371,10 +368,6 @@ class Bridge:
                 average = self.interval.get(key, gap)
                 self.interval[key] = average + 0.2 * (gap - average)
         self.ranges[key] = (cm, now)
-        if is_tag(a) and is_tag(b):
-            smoother, _, _ = self.distance_filter.get(key) or (OneEuro(), 0, 0)
-            value = smoother((cm,), now, self.tuning['still_hz'], self.tuning['follow'])[0]
-            self.distance_filter[key] = (smoother, value, now)
         if not tag_pair:
             history = self.anchor_history.setdefault(key, [])
             history.append(filtered)
@@ -490,12 +483,6 @@ class Bridge:
             # Gone for longer than the hold: start the smoothing afresh when it is back.
             self.point_filter.pop(tag, None)
         me = tag_number(tag)
-        seen = {n for pair in self.ranges for n in pair if is_tag(n)}
-        others = sorted((seen | self.known_tags | self.configured_tags) - {tag}, key=tag_number)
-        for other in others:
-            k = (min(tag, other), max(tag, other))
-            cm = self.distance_filter[k][1] if tuning['on'] and k in self.distance_filter else self.ranges.get(k, (0,))[0]
-            message[f'd{me}{tag_number(other)}'] = round(min(1.0, cm / span), 4) if fresh(k) else MISSING
         text = json.dumps(message, separators=(', ', ': '))
         packet = osc_message(f'/tag{me}', text)
         for base in [self.args.osc_port] + self.args.also_port:

@@ -23,7 +23,7 @@ import osc_bridge  # noqa: E402
 
 WIDTH, HEIGHT = 914.4, 396.24  # cm
 ANCHORS = {1: (0.0, 0.0), 3: (WIDTH, 0.0), 4: (WIDTH, HEIGHT), 5: (0.0, HEIGHT)}
-TAG, OTHER = 2, 6
+TAG = 2
 bridges = []  # closed after the tests
 
 
@@ -51,23 +51,22 @@ def to_cm(message):
 
 
 def run(path, seconds, bridge, seed=1, noise=8.0, drop=0.08, spike=0.03, blocked=None, blocked_from=0.0,
-        gaps=(), other=None):
+        gaps=()):
     """Feed simulated readings for `seconds`. path(t) -> (x, y) in cm. blocked: an anchor
     that reads 60-120 cm long and noisier from `blocked_from` on. gaps: (start, end, anchors
-    still heard). other: path of a second tag, for tag-to-tag distances.
+    still heard).
     Returns [(t, truth, output or None, message)] for every message tag 1 sends."""
     rng = random.Random(seed)
     out = []
     # Anchor 1 ranges each pair in turn; one pass over the tag pairs every ~50 ms.
-    pairs = [(TAG, a) for a in ANCHORS] + ([(TAG, OTHER)] if other else []) + \
-            ([(OTHER, a) for a in ANCHORS] if other else [])
+    pairs = [(TAG, a) for a in ANCHORS]
     step = 0.05 / len(pairs)
     t, i = 0.0, 0
     while t < seconds:
         a, b = pairs[i % len(pairs)]
         i += 1
         t += step
-        where = lambda node: path(t) if node == TAG else other(t) if node == OTHER else ANCHORS[node]
+        where = lambda node: path(t) if node == TAG else ANCHORS[node]
         heard = next((g[2] for g in gaps if g[0] <= t < g[1]), None)
         anchor = b if b in ANCHORS else None
         if heard is not None and anchor is not None and anchor not in heard and a == TAG:
@@ -203,17 +202,6 @@ class Smoothing(unittest.TestCase):
         self.assertEqual(accepted[:2], [False, False])
         self.assertTrue(any(accepted))
 
-    def test_tag_distances_are_smoothed(self):
-        span = math.dist(ANCHORS[1], ANCHORS[4])
-        spreads = {}
-        for label, bridge in (('raw', make_bridge(on=False)), ('smooth', make_bridge())):
-            samples = run(path=still(300, 200), other=still(600, 200), seconds=15, bridge=bridge)
-            d = [m['d12'] * span for t, _, _, m in samples if t >= 1 and m['d12'] != osc_bridge.MISSING]
-            spreads[label] = (statistics.pstdev(d), statistics.mean(d), max(d))
-        self.assertLess(spreads['smooth'][0], spreads['raw'][0] / 3)
-        self.assertAlmostEqual(spreads['smooth'][1], 300, delta=10)
-        self.assertLess(spreads['smooth'][2], 330)  # no spikes get through
-
     def test_raw_mode_passes_spikes_smoothing_drops_them(self):
         for on, kept in ((False, 2000.0), (True, 300.0)):
             bridge = make_bridge(on=on)
@@ -236,7 +224,7 @@ class Smoothing(unittest.TestCase):
     def test_every_key_present(self):
         bridge = make_bridge()
         bridge.heartbeat(100.0)
-        self.assertEqual(set(bridge.last_message[1]), {'x', 'y', 'inside', 'd12'})
+        self.assertEqual(set(bridge.last_message[1]), {'x', 'y', 'inside'})
 
 
 def report():

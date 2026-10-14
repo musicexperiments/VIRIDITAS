@@ -44,6 +44,8 @@
 //   every dot whose tag has no UWB position glides smoothly to random places
 //   as if someone were walking with it. Tags that are live still follow UWB.
 // - Space or the Play button starts and stops all four together.
+// - f: full screen: just the room, stretched edge to edge over the whole
+//   screen, with the dots (no rows or buttons); f again goes back.
 // - "C major" (off by default) moves every note to the nearest note of C major,
 //   so the four tags fit together. The kalimba's PitShift still shifts after it.
 // - "Play on this computer" (off by default) mixes all four on the laptop too.
@@ -73,6 +75,7 @@ s.waitForBoot {
 	var pitShift;
 	var pad, pos, order, drag, toPix, fromPix, setDot, applyDot, randomizers, padSize = 440, dotR = 13;
 	var simulate = false, motion, padW, padH, room, tagXY, tagHeard, holdS = 3;
+	var toPixIn, drawPad, full, fullView, toggleFull, refreshPads, keys;
 	var winW, winH, colW = 470, rowStep = 110, contentH, bottomY;
 
 	[
@@ -480,7 +483,7 @@ s.waitForBoot {
 	StaticText(win, Rect(16, 6, 140, 28))
 	.string_("Four Tags FX").font_(font.(18, true)).stringColor_(Color.white);
 	StaticText(win, Rect(150, 11, winW - 260, 20))
-	.string_("dots follow the UWB tags (/tagN, port %+) · drag to override · space play/stop".format(uwbPort))
+	.string_("dots follow the UWB tags (/tagN, port %+) · drag to override · space play/stop · f full screen".format(uwbPort))
 	.font_(font.(11)).stringColor_(Color.gray(0.65));
 
 	playButton = Button(win, Rect(winW - 96, 8, 84, 26))
@@ -496,7 +499,9 @@ s.waitForBoot {
 	order = (0..3);   // drawing order: the last one is on top and gets grabbed first
 
 	// pad coordinates <-> 0..1 (the dots stay fully inside the pad)
-	toPix = { |xy| Point(dotR + (xy[0] * (padW - (2 * dotR))), dotR + ((1 - xy[1]) * (padH - (2 * dotR)))) };
+	// on a w x h view, with dots of radius r kept fully inside
+	toPixIn = { |xy, w, h, r| Point(r + (xy[0] * (w - (2 * r))), r + ((1 - xy[1]) * (h - (2 * r)))) };
+	toPix = { |xy| toPixIn.(xy, padW, padH, dotR) };
 	fromPix = { |x, y| [(x - dotR) / (padW - (2 * dotR)), 1 - ((y - dotR) / (padH - (2 * dotR)))].clip(0, 1) };
 
 	// the middle of the pad is dry: each effect starts at the middle and is full
@@ -523,7 +528,7 @@ s.waitForBoot {
 	setDot = { |i, xy|
 		pos[i] = xy;
 		applyDot.(i);
-		pad.refresh;
+		refreshPads.();
 	};
 
 	// each tag picks a new random setting every 0.4-1.2 s, on its own timing
@@ -539,42 +544,47 @@ s.waitForBoot {
 	};
 
 	// the room's outline, centred down the side of the rows
-	pad = UserView(win, Rect(16, 44 + ((contentH - padH) / 2), padW, padH))
-	.background_(Color.gray(0.2))
-	.drawFunc_({
+	// the room on a w x h view: grid, random quarters, anchors and the dots
+	// (radius r); big scales the lines and labels. Used by the pad and by the
+	// full-screen view.
+	drawPad = { |w, h, r, big = 1|
 		Pen.strokeColor = Color.gray(0.3);
-		Pen.width = 1;
+		Pen.width = big;
 		[0.25, 0.5, 0.75].do { |f|
-			Pen.line(Point(padW * f, 0), Point(padW * f, padH));
-			Pen.line(Point(0, padH * f), Point(padW, padH * f));
+			Pen.line(Point(w * f, 0), Point(w * f, h));
+			Pen.line(Point(0, h * f), Point(w, h * f));
 		};
 		Pen.stroke;
 		Pen.strokeColor = Color.gray(0.5);
-		Pen.width = 2;
-		Pen.line(Point(padW / 2, 0), Point(padW / 2, padH));
-		Pen.line(Point(0, padH / 2), Point(padW, padH / 2));
+		Pen.width = 2 * big;
+		Pen.line(Point(w / 2, 0), Point(w / 2, h));
+		Pen.line(Point(0, h / 2), Point(w, h / 2));
 		Pen.stroke;
 		voices.do { |v, i|
-			var q = Rect(if(v.randQuad[0] < 0) { 0 } { padW / 2 }, if(v.randQuad[1] > 0) { 0 } { padH / 2 }, padW / 2, padH / 2);
-			Pen.stringCenteredIn("% random".format(i + 1), q, font.(16, true), v.color.copy.alpha_(0.3));
+			var q = Rect(if(v.randQuad[0] < 0) { 0 } { w / 2 }, if(v.randQuad[1] > 0) { 0 } { h / 2 }, w / 2, h / 2);
+			Pen.stringCenteredIn("% random".format(i + 1), q, font.(16 * big, true), v.color.copy.alpha_(0.3));
 		};
 		// the anchors in their corners, Anchor 1 top-left, then clockwise
-		[["A1", 4, 3], ["A2", padW - 22, 3], ["A3", padW - 22, padH - 17], ["A4", 4, padH - 17]].do { |a|
-			Pen.stringAtPoint(a[0], Point(a[1], a[2]), font.(11, true), Color.gray(0.75));
+		[["A1", 4, 3], ["A2", w - (22 * big), 3], ["A3", w - (22 * big), h - (17 * big)], ["A4", 4, h - (17 * big)]].do { |a|
+			Pen.stringAtPoint(a[0], Point(a[1], a[2]), font.(11 * big, true), Color.gray(0.75));
 		};
 		// a tag that has dropped out isn't shown
 		order.reject { |i| voices[i][\hidden] == true }.do { |i|
-			var r = Rect.aboutPoint(toPix.(pos[i]), dotR, dotR);
+			var dot = Rect.aboutPoint(toPixIn.(pos[i], w, h, r), r, r);
 			Pen.fillColor = voices[i].color;
-			Pen.addOval(r);
+			Pen.addOval(dot);
 			Pen.fill;
 			Pen.strokeColor = Color.black.alpha_(0.6);
-			Pen.width = 2;
-			Pen.addOval(r);
+			Pen.width = 2 * big;
+			Pen.addOval(dot);
 			Pen.stroke;
-			Pen.stringCenteredIn((i + 1).asString, r, font.(12, true), Color.black);
+			Pen.stringCenteredIn((i + 1).asString, dot, font.(12 * big, true), Color.black);
 		};
-	})
+	};
+
+	pad = UserView(win, Rect(16, 44 + ((contentH - padH) / 2), padW, padH))
+	.background_(Color.gray(0.2))
+	.drawFunc_({ drawPad.(padW, padH, dotR) })
 	.mouseDownAction_({ |u, x, y|
 		// the topmost dot under the mouse
 		drag = order.reverse.detect { |i| voices[i][\hidden] != true and: { (toPix.(pos[i]) - Point(x, y)).rho <= (dotR + 4) } };
@@ -582,6 +592,7 @@ s.waitForBoot {
 	})
 	.mouseMoveAction_({ |u, x, y| drag !? { setDot.(drag, fromPix.(x, y)) } })
 	.mouseUpAction_({ drag = nil });
+	refreshPads = { pad.refresh; fullView !? { fullView.refresh } };   // and the full-screen view (f)
 
 	// --- one row per tag beside the pad: its effects, readout and stream button ---
 
@@ -701,7 +712,7 @@ s.waitForBoot {
 						lost: Color(0.95, 0.45, 0.4), simulated: Color(0.6, 0.85, 1), dragged: Color.white)[state];
 				};
 			};
-			if(moved) { pad.refresh };
+			if(moved) { refreshPads.() };
 			dt.wait;
 		}
 	}.play(AppClock);
@@ -729,11 +740,33 @@ s.waitForBoot {
 	.states_([["Stream all four"]])
 	.action_({ voices.do { |v| if(v.streamButton.value == 0) { v.streamButton.valueAction = 1 } } });
 
-	win.view.keyDownAction = { |view, char, mod, unicode, keycode, key|
-		if(char == $ ) { playButton.valueAction = 1 - playButton.value; true };
+	// full screen (f): only the room, stretched edge to edge over the whole
+	// screen, with its dots; f again (or space for play/stop) works there too
+	toggleFull = {
+		if(full.notNil) { full.close } {
+			full = Window("Four Tags FX", Window.screenBounds, resizable: false, border: false);
+			full.background = Color.gray(0.2);
+			fullView = UserView(full, full.view.bounds).resize_(5).canFocus_(true)
+			.drawFunc_({ |u| drawPad.(u.bounds.width, u.bounds.height, dotR * 3, 3) });
+			full.view.keyDownAction = keys;
+			fullView.keyDownAction = keys;
+			full.onClose = { full = nil; fullView = nil };
+			full.front;
+			full.fullScreen;
+			fullView.focus;
+		};
 	};
 
+	keys = { |view, char|
+		case
+		{ char == $  } { playButton.valueAction = 1 - playButton.value; true }
+		{ (char == $f) or: { char == $F } } { toggleFull.(); true }
+		{ nil }
+	};
+	win.view.keyDownAction = keys;
+
 	win.onClose = {
+		full !? { full.close };
 		randomizers.do(_.stop);
 		motion.stop;
 		stop.();
