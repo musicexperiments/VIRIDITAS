@@ -7,7 +7,7 @@ compiling class library...
 	method table size 20758744 bytes, big table size 156826320
 	Number of Symbols 14986
 	Byte Code Size 449906
-	compiled 556 files in 0.23 seconds
+	compiled 556 files in 0.19 seconds
 compile done
 localhost : setting clientID to 0.
 internal : setting clientID to 0.
@@ -17,13 +17,14 @@ Class tree inited in 0.04 seconds
 *** Welcome to SuperCollider 3.14.1. *** For help type cmd-d.
 Booting server 'localhost' on address 127.0.0.1:57110.
 Found 0 LADSPA plugins
-Number of Devices: 6
+Number of Devices: 7
    0 : "BenQ PJ"
-   1 : "Clarett+ 8Pre"
-   2 : "LG UltraFine Display Audio"
+   1 : "BenQ PJ"
+   2 : "Clarett+ 8Pre"
    3 : "LG UltraFine Display Audio"
-   4 : "Mac mini Speakers"
-   5 : "all"
+   4 : "LG UltraFine Display Audio"
+   5 : "Mac mini Speakers"
+   6 : "all"
 
 "LG UltraFine Display Audio" Input Device
    Streams: 1
@@ -39,368 +40,172 @@ Requested notification messages from server 'localhost'
 localhost: server process's maxLogins (1) matches with my options.
 localhost: keeping clientID (0) as confirmed by server process.
 Shared memory server interface initialized
-STREAM,board,10.10.10.185:4220
+STREAM,board,10.10.10.22:4220
+STREAM,board,10.10.10.82:4220
 STREAM,server,48000 Hz -> 16000 Hz
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=4.4,received=541,recovered=0,concealed=0,late=0,drift=+0/-0,rebuffers=0,rssi=-32
-SPEAKER,fill=4.3,received=1043,recovered=0,concealed=0,late=0,drift=+0/-0,rebuffers=0,rssi=-55
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-SPEAKER,fill=4.2,received=1545,recovered=0,concealed=5,late=5,drift=+0/-0,rebuffers=0,rssi=-53
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=4.2,received=2048,recovered=0,concealed=5,late=5,drift=+0/-0,rebuffers=0,rssi=-55
-SPEAKER,fill=4.1,received=2550,recovered=0,concealed=6,late=6,drift=+0/-0,rebuffers=0,rssi=-60
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag2.local
-SPEAKER,fill=4.2,received=3052,recovered=0,concealed=6,late=6,drift=+0/-0,rebuffers=0,rssi=-57
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=4.2,received=3554,recovered=0,concealed=6,late=6,drift=+0/-0,rebuffers=0,rssi=-66
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=4.2,received=4057,recovered=0,concealed=6,late=6,drift=+0/-0,rebuffers=0,rssi=-61
-SPEAKER,fill=4.2,received=4559,recovered=0,concealed=6,late=6,drift=+0/-0,rebuffers=0,rssi=-53
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag2.local
-SPEAKER,fill=4.1,received=5061,recovered=0,concealed=6,late=6,drift=+0/-0,rebuffers=0,rssi=-60
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=4.1,received=5566,recovered=0,concealed=6,late=6,drift=+0/-0,rebuffers=0,rssi=-62
-SPEAKER,fill=4.2,received=6068,recovered=0,concealed=6,late=6,drift=+0/-0,rebuffers=0,rssi=-50
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-SPEAKER,fill=4.1,received=6570,recovered=0,concealed=6,late=6,drift=+0/-0,rebuffers=0,rssi=-67
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=4.1,received=7073,recovered=0,concealed=7,late=7,drift=+0/-0,rebuffers=0,rssi=-73
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=4.7,received=7572,recovered=0,concealed=24,late=21,drift=+162/-0,rebuffers=0,rssi=-58
-SPEAKER,fill=5.7,received=8074,recovered=0,concealed=24,late=21,drift=+162/-0,rebuffers=0,rssi=-52
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.9,received=8577,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-67
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.5,received=9080,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-60
-SPEAKER,fill=5.3,received=9581,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-62
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.2,received=10084,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-61
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.2,received=10586,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-57
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.2,received=11089,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-64
-SPEAKER,fill=5.2,received=11591,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-54
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.2,received=12093,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-53
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-SPEAKER,fill=5.2,received=12596,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-59
-SPEAKER,fill=5.2,received=13097,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-51
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag2.local
-SPEAKER,fill=5.2,received=13598,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-60
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.2,received=14101,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-64
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.2,received=14603,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-60
-SPEAKER,fill=5.2,received=15105,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-60
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag2.local
-SPEAKER,fill=5.2,received=15608,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-54
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.2,received=16111,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-45
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.2,received=16613,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-56
-SPEAKER,fill=5.3,received=17115,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-46
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.3,received=17617,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-46
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.3,received=18120,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-51
-SPEAKER,fill=5.3,received=18622,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-51
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.3,received=19125,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-50
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.3,received=19626,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-49
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.3,received=20128,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-50
-SPEAKER,fill=5.3,received=20632,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-51
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.3,received=21134,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-51
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.3,received=21637,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-51
-SPEAKER,fill=5.3,received=22139,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-50
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.3,received=22641,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-50
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.3,received=23142,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-51
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.3,received=23645,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-44
-SPEAKER,fill=5.3,received=24146,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-45
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.3,received=24649,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-45
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.3,received=25152,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-45
-SPEAKER,fill=5.3,received=25653,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-45
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.3,received=26156,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-42
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.3,received=26658,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-43
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.3,received=27160,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-43
-SPEAKER,fill=5.3,received=27661,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-42
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.3,received=28164,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-63
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.4,received=28665,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-56
-SPEAKER,fill=5.4,received=29167,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-46
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.3,received=29669,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-70
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.4,received=30172,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-64
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-SPEAKER,fill=5.3,received=30773,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-54
-SPEAKER,fill=5.4,received=31274,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-56
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.3,received=31777,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-61
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.3,received=32281,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-53
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.4,received=32782,recovered=0,concealed=24,late=21,drift=+162/-2,rebuffers=0,rssi=-61
-SPEAKER,fill=5.3,received=33284,recovered=1,concealed=25,late=22,drift=+162/-2,rebuffers=0,rssi=-61
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.3,received=33787,recovered=1,concealed=25,late=22,drift=+162/-2,rebuffers=0,rssi=-50
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.4,received=34289,recovered=1,concealed=25,late=22,drift=+162/-2,rebuffers=0,rssi=-47
-SPEAKER,fill=5.3,received=34792,recovered=1,concealed=25,late=22,drift=+162/-2,rebuffers=0,rssi=-56
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.3,received=35295,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-59
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag2.local
-SPEAKER,fill=5.3,received=35798,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-47
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-SPEAKER,fill=5.4,received=36302,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-51
-SPEAKER,fill=5.4,received=36803,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-47
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-SPEAKER,fill=5.4,received=37304,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-46
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag2.local
-SPEAKER,fill=5.4,received=37806,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-59
-SPEAKER,fill=5.4,received=38308,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-60
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.4,received=38809,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-57
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.4,received=39310,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-60
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.4,received=39812,recovered=1,concealed=26,late=23,drift=+162/-2,rebuffers=0,rssi=-60
-SPEAKER,fill=5.3,received=40315,recovered=1,concealed=34,late=31,drift=+162/-2,rebuffers=0,rssi=-60
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.3,received=40816,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-61
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.4,received=41317,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-61
-SPEAKER,fill=5.4,received=41818,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-61
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.4,received=42319,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-61
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.4,received=42821,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-60
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.4,received=43326,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-63
-SPEAKER,fill=5.4,received=43829,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-58
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.4,received=44331,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-60
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.5,received=44833,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-58
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.5,received=45335,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-60
-SPEAKER,fill=5.4,received=45838,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-61
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.4,received=46340,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-56
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag2.local
-SPEAKER,fill=5.4,received=46842,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-47
-SPEAKER,fill=5.5,received=47345,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-47
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.5,received=47847,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-56
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-STREAM,waiting,cannot find uwb-tag2.local
-SPEAKER,fill=5.5,received=48450,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-50
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.5,received=48953,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-54
-SPEAKER,fill=5.5,received=49456,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-51
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.5,received=49958,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-53
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.5,received=50459,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-56
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.5,received=50962,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-57
-SPEAKER,fill=5.5,received=51463,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-64
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.5,received=51965,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-61
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.5,received=52467,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-55
-SPEAKER,fill=5.5,received=52971,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-53
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.5,received=53472,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-50
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.5,received=53975,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-61
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.5,received=54478,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-59
-SPEAKER,fill=5.5,received=54981,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-57
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.6,received=55482,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-52
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.5,received=55984,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-50
-SPEAKER,fill=5.5,received=56485,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-44
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.5,received=56988,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-47
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
-SPEAKER,fill=5.5,received=57490,recovered=1,concealed=35,late=32,drift=+162/-2,rebuffers=0,rssi=-46
-STREAM,waiting,cannot find uwb-tag3.local
-STREAM,waiting,cannot find uwb-tag2.local
-STREAM,waiting,cannot find uwb-tag4.local
+STREAM,board,10.10.10.185:4220
+STREAM,board,10.10.10.94:4220
+STREAM,server,48000 Hz -> 16000 Hz
+STREAM,server,48000 Hz -> 16000 Hz
+STREAM,server,48000 Hz -> 16000 Hz
+SPEAKER,fill=3.0,received=1332601,recovered=104,concealed=4067,late=1800,drift=+9478/-1396,rebuffers=100,rssi=-42
+SPEAKER,fill=3.0,received=1481273,recovered=224,concealed=6815,late=2826,drift=+10119/-5421,rebuffers=181,rssi=-40
+SPEAKER,fill=3.3,received=69153,recovered=40,concealed=1336,late=366,drift=+6/-61,rebuffers=44,rssi=-34
+SPEAKER,fill=7.0,received=1332856,recovered=106,concealed=4097,late=1800,drift=+9478/-1454,rebuffers=101,rssi=-54
+SPEAKER,fill=7.0,received=1481531,recovered=225,concealed=6845,late=2826,drift=+10119/-5479,rebuffers=182,rssi=-44
+SPEAKER,fill=7.0,received=69415,recovered=41,concealed=1366,late=366,drift=+6/-119,rebuffers=45,rssi=-34
+SPEAKER,fill=7.2,received=1333117,recovered=108,concealed=4127,late=1800,drift=+9478/-1515,rebuffers=102,rssi=-52
+SPEAKER,fill=7.2,received=1481792,recovered=227,concealed=6875,late=2826,drift=+10119/-5540,rebuffers=183,rssi=-41
+SPEAKER,fill=7.2,received=69676,recovered=43,concealed=1396,late=366,drift=+6/-180,rebuffers=46,rssi=-34
+SPEAKER,fill=4.9,received=1333394,recovered=109,concealed=4129,late=1802,drift=+9478/-1515,rebuffers=102,rssi=-50
+SPEAKER,fill=6.6,received=1482092,recovered=228,concealed=6875,late=2826,drift=+10119/-5673,rebuffers=183,rssi=-40
+SPEAKER,fill=4.7,received=69985,recovered=44,concealed=1401,late=371,drift=+6/-180,rebuffers=46,rssi=-34
+SPEAKER,fill=3.7,received=1333677,recovered=109,concealed=4160,late=1803,drift=+9478/-1515,rebuffers=103,rssi=-57
+SPEAKER,fill=5.6,received=1482355,recovered=228,concealed=6905,late=2826,drift=+10119/-5943,rebuffers=184,rssi=-43
+SPEAKER,fill=3.5,received=70236,recovered=44,concealed=1433,late=373,drift=+6/-180,rebuffers=47,rssi=-34
+SPEAKER,fill=7.4,received=1333935,recovered=110,concealed=4190,late=1803,drift=+9478/-1578,rebuffers=104,rssi=-53
+SPEAKER,fill=7.6,received=1482609,recovered=230,concealed=6935,late=2826,drift=+10119/-6008,rebuffers=185,rssi=-42
+SPEAKER,fill=7.5,received=70493,recovered=46,concealed=1463,late=373,drift=+6/-244,rebuffers=48,rssi=-34
+SPEAKER,fill=4.8,received=1334713,recovered=113,concealed=4221,late=1804,drift=+9478/-1641,rebuffers=105,rssi=-46
+SPEAKER,fill=4.5,received=1483409,recovered=233,concealed=6969,late=2829,drift=+10119/-6071,rebuffers=186,rssi=-43
+SPEAKER,fill=4.7,received=71273,recovered=50,concealed=1496,late=375,drift=+6/-307,rebuffers=49,rssi=-34
+SPEAKER,fill=4.3,received=1335220,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-49
+SPEAKER,fill=3.8,received=1483924,recovered=233,concealed=6981,late=2841,drift=+10378/-6071,rebuffers=186,rssi=-42
+SPEAKER,fill=4.1,received=71781,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-34
+SPEAKER,fill=5.1,received=1335722,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-56
+SPEAKER,fill=5.6,received=1484426,recovered=233,concealed=6981,late=2841,drift=+10425/-6071,rebuffers=186,rssi=-44
+SPEAKER,fill=4.9,received=72283,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-34
+SPEAKER,fill=5.5,received=1336225,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-58
+SPEAKER,fill=5.9,received=1484929,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-42
+SPEAKER,fill=5.2,received=72786,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-34
+SPEAKER,fill=5.7,received=1336727,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-47
+SPEAKER,fill=5.8,received=1485432,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-43
+SPEAKER,fill=5.3,received=73288,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-36
+SPEAKER,fill=5.7,received=1337230,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-55
+SPEAKER,fill=5.8,received=1485935,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-42
+SPEAKER,fill=5.4,received=73791,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-34
+SPEAKER,fill=5.7,received=1337733,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-44
+SPEAKER,fill=5.8,received=1486437,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-41
+SPEAKER,fill=5.4,received=74292,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-33
+SPEAKER,fill=5.7,received=1338235,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-59
+SPEAKER,fill=5.8,received=1486939,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-34
+SPEAKER,fill=5.4,received=74795,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-34
+SPEAKER,fill=5.8,received=1338737,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-40
+SPEAKER,fill=5.8,received=1487443,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-46
+SPEAKER,fill=5.4,received=75297,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-35
+SPEAKER,fill=5.8,received=1339240,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-38
+SPEAKER,fill=5.8,received=1487945,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-45
+SPEAKER,fill=5.4,received=75799,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-35
+SPEAKER,fill=5.7,received=1339743,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-44
+SPEAKER,fill=5.8,received=1488447,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-36
+SPEAKER,fill=5.4,received=76302,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-36
+SPEAKER,fill=5.8,received=1340246,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-45
+SPEAKER,fill=5.8,received=1488952,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-57
+SPEAKER,fill=5.4,received=76803,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-35
+SPEAKER,fill=5.8,received=1340748,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-43
+SPEAKER,fill=5.8,received=1489455,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-38
+SPEAKER,fill=5.4,received=77304,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-34
+SPEAKER,fill=5.8,received=1341251,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-41
+SPEAKER,fill=5.8,received=1489958,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-35
+SPEAKER,fill=5.4,received=77806,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-33
+SPEAKER,fill=5.8,received=1341754,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-41
+SPEAKER,fill=5.8,received=1490459,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-26
+SPEAKER,fill=5.4,received=78309,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-51
+SPEAKER,fill=5.8,received=1342256,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-41
+SPEAKER,fill=5.8,received=1490964,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-28
+SPEAKER,fill=5.4,received=78812,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-58
+SPEAKER,fill=5.9,received=1342758,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-44
+SPEAKER,fill=5.8,received=1491466,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-27
+SPEAKER,fill=5.4,received=79314,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-42
+SPEAKER,fill=5.8,received=1343261,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-36
+SPEAKER,fill=5.8,received=1491969,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-29
+SPEAKER,fill=5.4,received=79817,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-29
+SPEAKER,fill=5.8,received=1343765,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-39
+SPEAKER,fill=5.8,received=1492470,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-30
+SPEAKER,fill=5.4,received=80322,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-31
+SPEAKER,fill=5.8,received=1344266,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-39
+SPEAKER,fill=5.9,received=1492972,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-32
+SPEAKER,fill=5.4,received=80826,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-30
+SPEAKER,fill=5.8,received=1344769,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-42
+SPEAKER,fill=5.9,received=1493474,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-31
+SPEAKER,fill=5.4,received=81329,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-31
+SPEAKER,fill=5.8,received=1345271,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-42
+SPEAKER,fill=5.8,received=1493976,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-31
+SPEAKER,fill=5.4,received=81830,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-33
+SPEAKER,fill=5.9,received=1345774,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-40
+SPEAKER,fill=5.9,received=1494478,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-31
+SPEAKER,fill=5.4,received=82334,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-33
+SPEAKER,fill=5.8,received=1346277,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-40
+SPEAKER,fill=5.9,received=1494980,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-31
+SPEAKER,fill=5.4,received=82836,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-34
+SPEAKER,fill=5.9,received=1346778,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-41
+SPEAKER,fill=5.8,received=1495482,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-31
+SPEAKER,fill=5.4,received=83338,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-30
+SPEAKER,fill=5.8,received=1347282,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-42
+SPEAKER,fill=5.8,received=1495983,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-31
+SPEAKER,fill=5.5,received=83839,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-34
+SPEAKER,fill=5.8,received=1347784,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-41
+SPEAKER,fill=5.8,received=1496484,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-32
+SPEAKER,fill=5.4,received=84339,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-33
+SPEAKER,fill=5.8,received=1348288,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-40
+SPEAKER,fill=5.9,received=1496986,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-32
+SPEAKER,fill=5.4,received=84843,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-36
+SPEAKER,fill=5.8,received=1348790,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-39
+SPEAKER,fill=5.9,received=1497486,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-32
+SPEAKER,fill=5.4,received=85344,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-33
+SPEAKER,fill=5.8,received=1349294,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-40
+SPEAKER,fill=5.9,received=1497987,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-31
+SPEAKER,fill=5.4,received=85847,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-36
+SPEAKER,fill=5.9,received=1349795,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-39
+SPEAKER,fill=5.9,received=1498489,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-34
+SPEAKER,fill=5.5,received=86350,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-34
+SPEAKER,fill=5.8,received=1350297,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-40
+SPEAKER,fill=5.9,received=1498990,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-31
+SPEAKER,fill=5.5,received=86852,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-35
+SPEAKER,fill=5.8,received=1350799,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-39
+SPEAKER,fill=5.9,received=1499490,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-31
+SPEAKER,fill=5.5,received=87354,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-34
+SPEAKER,fill=5.9,received=1351302,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-41
+SPEAKER,fill=5.9,received=1499993,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-31
+SPEAKER,fill=5.5,received=87857,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-34
+SPEAKER,fill=5.0,received=6,recovered=1,concealed=0,late=0,drift=+0/-0,rebuffers=0,rssi=-39
+SPEAKER,fill=5.9,received=1351805,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-40
+SPEAKER,fill=5.5,received=88359,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-34
+SPEAKER,fill=5.9,received=1500594,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-32
+SPEAKER,fill=10.3,received=519,recovered=2,concealed=2,late=0,drift=+0/-449,rebuffers=0,rssi=-46
+SPEAKER,fill=5.8,received=1352307,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-38
+SPEAKER,fill=5.5,received=88861,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-32
+SPEAKER,fill=5.9,received=1501096,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-32
+SPEAKER,fill=10.2,received=1020,recovered=2,concealed=2,late=0,drift=+0/-953,rebuffers=0,rssi=-52
+SPEAKER,fill=5.8,received=1352809,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-39
+SPEAKER,fill=5.8,received=1501598,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-32
+SPEAKER,fill=5.4,received=89462,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-33
+SPEAKER,fill=8.2,received=1523,recovered=2,concealed=2,late=0,drift=+0/-1460,rebuffers=0,rssi=-54
+SPEAKER,fill=5.8,received=1353312,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-42
+SPEAKER,fill=5.8,received=1502103,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-31
+SPEAKER,fill=5.4,received=89966,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-34
+SPEAKER,fill=5.5,received=2027,recovered=2,concealed=2,late=0,drift=+0/-1861,rebuffers=0,rssi=-46
+SPEAKER,fill=5.8,received=1353815,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-40
+SPEAKER,fill=5.8,received=1502606,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-32
+SPEAKER,fill=5.4,received=90470,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-31
+SPEAKER,fill=4.2,received=2529,recovered=2,concealed=2,late=0,drift=+0/-1861,rebuffers=0,rssi=-45
+SPEAKER,fill=5.9,received=1354317,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-40
+SPEAKER,fill=5.9,received=1503110,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-32
+SPEAKER,fill=5.5,received=90973,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-31
+SPEAKER,fill=4.1,received=3031,recovered=2,concealed=2,late=0,drift=+216/-1861,rebuffers=0,rssi=-57
+SPEAKER,fill=5.9,received=1354819,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-39
+SPEAKER,fill=5.9,received=1503613,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-34
+SPEAKER,fill=5.5,received=91474,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-32
+SPEAKER,fill=4.3,received=3533,recovered=2,concealed=2,late=0,drift=+216/-1861,rebuffers=0,rssi=-51
+SPEAKER,fill=5.9,received=1355323,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-40
+SPEAKER,fill=5.9,received=1504115,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-34
+SPEAKER,fill=5.5,received=91976,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-34
+SPEAKER,fill=4.4,received=4035,recovered=2,concealed=2,late=0,drift=+216/-1861,rebuffers=0,rssi=-46
+SPEAKER,fill=5.9,received=1355825,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-40
+SPEAKER,fill=5.9,received=1504618,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-32
+SPEAKER,fill=5.5,received=92478,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-34
+SPEAKER,fill=4.4,received=4536,recovered=2,concealed=2,late=0,drift=+216/-1861,rebuffers=0,rssi=-37
+SPEAKER,fill=5.9,received=1356327,recovered=113,concealed=4224,late=1807,drift=+9478/-1641,rebuffers=105,rssi=-38
+SPEAKER,fill=5.9,received=1505121,recovered=233,concealed=6981,late=2841,drift=+10425/-6214,rebuffers=186,rssi=-32
+SPEAKER,fill=5.5,received=92979,recovered=50,concealed=1499,late=378,drift=+6/-307,rebuffers=49,rssi=-31
+SPEAKER,fill=4.4,received=5038,recovered=2,concealed=2,late=0,drift=+216/-1861,rebuffers=0,rssi=-35

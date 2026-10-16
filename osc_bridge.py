@@ -10,6 +10,7 @@ range that involves a tag, the tag is re-located and one OSC message goes out:
   argument: a JSON string {"x": .., "y": .., "inside": ..}
 
 x and y run -1 to 1 across the anchors' grid: A1 (-1, 1), A2 (1, 1), A3 (1, -1), A4 (-1, -1).
+Outside the room both x and y are sent as OUTSIDE (10.0), off the pixel space, with inside = 0.
 A value that has not been read (no fresh range) is the string "N/A". Every
 tag's port keeps sending, twice a second at least, with every key present, even
 when that tag, anchor 1 or the anchor layout is unavailable.
@@ -44,6 +45,7 @@ LAYOUT = ROOT / 'layout.json'  # Written by uwb.py's layout menu.
 DEFAULT_FRAME = {1: (-1.0, 1.0), 3: (1.0, 1.0), 4: (1.0, -1.0), 5: (-1.0, -1.0)}
 FRESH_S = 1.0  # A range older than this is not used.
 MISSING = "N/A"
+OUTSIDE = 10.0  # x and y sent for a tag outside the room: far off the -1..1 pixel space.
 FILTER = ROOT / 'filter.json'  # Smoothing settings, written by uwb.py.
 FILTER_DEFAULTS = {
     'on': True,
@@ -471,10 +473,11 @@ class Bridge:
             gx, gy = mapper(point)
             x0, x1, y0, y1 = self.grid_box
             x, y = 2 * (gx - x0) / (x1 - x0) - 1, 2 * (gy - y0) / (y1 - y0) - 1
-            clamp = lambda v: min(1.0, max(-1.0, v))
-            message['x'] = round(clamp(x), 4) + 0.0  # + 0.0 turns -0.0 into 0.0
-            message['y'] = round(clamp(y), 4) + 0.0
-            message['inside'] = int(-1 <= x <= 1 and -1 <= y <= 1)
+            inside = -1 <= x <= 1 and -1 <= y <= 1
+            # Outside the room, send a value well off the pixel space so they vanish from it.
+            message['x'] = round(x, 4) + 0.0 if inside else OUTSIDE  # + 0.0 turns -0.0 into 0.0
+            message['y'] = round(y, 4) + 0.0 if inside else OUTSIDE
+            message['inside'] = int(inside)
             self.held[tag] = (message['x'], message['y'], message['inside'], now)
         elif tuning['on'] and tag in self.held and now - self.held[tag][3] <= tuning['hold_s']:
             message['x'], message['y'], message['inside'], _ = self.held[tag]

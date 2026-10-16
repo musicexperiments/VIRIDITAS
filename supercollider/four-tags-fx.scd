@@ -63,6 +63,11 @@
 // - Mixer window (opens beside it; m closes / reopens it): a level meter for
 //   the soundscape (viriditas_day.wav) and for each tag (what goes to its
 //   speaker), with a volume fader under each. A dropped tag reads silent.
+// - Walking out of the room plays one full cycle of the noisy demo
+//   (pbind-demos/noisy-demo.scd: its 8 notes once, highest to lowest) on that tag's own speaker (not the soundscape; it still
+//   plays as the tag walks out and is muted). Walking in plays nothing.
+//   A new exit restarts the tag's cycle if it's still playing.
+//   oneShotAmp sets its level. A tag dropping out is not an exit.
 
 (
 // this folder (VIRIDITAS/supercollider): the SynthDefs and pbind-demos it loads are here
@@ -77,20 +82,21 @@ s.waitForBoot {
 	var voices, kalimba, flute, apad, sine;
 	var win, font, playButton, laptop = 0, sources, fxs, mixers;
 	var cMajor = false, snap, snapAll, toCMajor;
-	var playVoice, stopVoice, play, stop, startStream, stopStream;
+	var playVoice, stopVoice, play, stop, startStream, stopStream, playShot;
 	var pitShift;
 	var pad, pos, order, drag, toPix, fromPix, setDot, applyDot, randomizers, padSize = 440, dotR = 13;
-	var simulate = false, motion, padW, padH, room, tagXY, tagHeard, holdS = 3;
+	var simulate = false, motion, padW, padH, room, tagXY, tagHeard, tagOut, holdS = 3;
 	var toPixIn, drawPad, full, fullView, toggleFull, refreshPads, keys;
 	var winW, winH, colW = 470, rowStep = 110, contentH, bottomY;
-	var dayBuf, daySynth, dayAmp = 1;
+	var dayBuf, daySynth, dayAmp = 1, wasOut, oneShotAmp = 1;
 	var mixWin, meters, makeMixer, volSpec = ControlSpec(0, 2, \amp);
 
 	[
 		"SynthDefs/percussion/kalimba.scd", "pbind-demos/kalimba-demo.scd",
 		"SynthDefs/winds/waveguideFlute.scd", "pbind-demos/waveguideFlute-demo.scd",
 		"SynthDefs/pads/apadMH.scd", "pbind-demos/apadMH-demo.scd",
-		"SynthDefs/misc/vintageSine.scd", "pbind-demos/vintageSine-demo.scd"
+		"SynthDefs/misc/vintageSine.scd", "pbind-demos/vintageSine-demo.scd",
+		"SynthDefs/misc/noisy.scd", "pbind-demos/noisy-demo.scd"   // the exit one-shot
 	].do { |f| (dir +/+ f).load };
 
 	// ---------- tag 1: kalimba -> PitShift -> echo ----------
@@ -251,8 +257,9 @@ s.waitForBoot {
 
 	// ---------- one per tag: volume, then to the laptop and into the tag's ring buffer ----------
 
-	SynthDef(\ftMixer, { |in, bufnum = 900, posBus = 900, vol = 0.8, laptop = 1, id = 0|
-		var sig = In.ar(in, 2) * vol.lag(0.1);
+	// shot: the tag's enter / exit one-shots, added after vol so the mute when it walks out doesn't cut them off
+	SynthDef(\ftMixer, { |in, shot, bufnum = 900, posBus = 900, vol = 0.8, laptop = 1, id = 0|
+		var sig = (In.ar(in, 2) * vol.lag(0.1)) + In.ar(shot, 2);
 		var mono = Limiter.ar(sig.sum * 0.7, 0.9);
 		var phase = Phasor.ar(0, 1, 0, BufFrames.kr(bufnum));
 		SendPeakRMS.kr(mono, 20, 3, '/ftLevel', id);   // the mixer window's meter for this tag
@@ -407,6 +414,7 @@ s.waitForBoot {
 		v.buf = 900 + i;
 		v.statusPort = 57200 + i;
 		v.bus = Bus.audio(s, 2);
+		v.shotBus = Bus.audio(s, 2);
 		v.ring = Buffer.alloc(s, s.sampleRate.asInteger, 1, bufnum: v.buf);   // 1 s
 	};
 	s.sync;
@@ -417,8 +425,9 @@ s.waitForBoot {
 	mixers = Group.after(fxs);
 	voices.do { |v, i|
 		v.fxGroup = Group.tail(fxs);
+		v.shotGroup = Group.tail(fxs);   // the enter / exit one-shots, into v.shotBus
 		v.makeFx;
-		v.mixer = Synth(\ftMixer, [in: v.bus, bufnum: v.buf, posBus: v.buf, vol: 0, laptop: laptop, id: i], mixers);   // silent until its tag reports
+		v.mixer = Synth(\ftMixer, [in: v.bus, shot: v.shotBus, bufnum: v.buf, posBus: v.buf, vol: 0, laptop: laptop, id: i], mixers);   // silent until its tag reports
 		v[\hidden] = true;   // matches vol 0, so the first position (even before the first frame) turns it up
 	};
 	dayBuf = Buffer.read(s, dir +/+ "media/viriditas_day.wav");
@@ -452,6 +461,14 @@ s.waitForBoot {
 		// the demo repeated forever; the short rest keeps a broken or empty demo from hanging
 		v[\player] = Pn(Pseq([v.demo, Pbind(\type, \rest, \dur, Pn(0.5, 1))]), inf).collect(toCMajor)
 		.play(v.tempoClock ? TempoClock.default, protoEvent: Event.default.copy.put(\group, v[\group]).put(\out, v.bus), quant: 0);
+	};
+
+	// one full cycle of a demo (noisy) on a tag's own speaker, through its mixer's
+	// shot input; it replaces the tag's cycle still playing (notes already sounding ring out)
+	playShot = { |v, name|
+		v[\shot] !? { v[\shot].stop };
+		v[\shot] = Pmul(\amp, oneShotAmp, Pseq([Pdef(name)], 1))
+		.play(protoEvent: Event.default.copy.put(\group, v.shotGroup).put(\out, v.shotBus), quant: 0);
 	};
 
 	stop = {
@@ -671,13 +688,22 @@ s.waitForBoot {
 	// same corners as the pad, and are "N/A" while the tag has no position.
 	tagXY = nil ! 4;
 	tagHeard = -inf ! 4;   // when each tag last had a position
+	tagOut = false ! 4;   // the tag's last position was outside the room (inside = 0)
+	wasOut = nil ! 4;   // inside / outside at the tag's previous position (nil: none yet)
 	voices.do { |v, i|
 		if(thisProcess.openUDPPort(uwbPort + i).not) { "Four Tags FX: can't listen on port %".format(uwbPort + i).warn };
 		OSCdef(("fourTagsFXUwb" ++ i).asSymbol, { |msg|
 			var data = try { msg[1].asString.parseJSON }, x, y;
 			if(data.isKindOf(Dictionary)) { x = data["x"]; y = data["y"] };
 			if(x.notNil and: { y.notNil } and: { x != "N/A" } and: { y != "N/A" }) {
-				tagXY[i] = [x.asFloat + 1 / 2, y.asFloat + 1 / 2].clip(0, 1);
+				// outside the room x and y are sent far off the grid: keep the dot where it was
+				tagOut[i] = data["inside"].asString == "0";
+				if(tagOut[i].not) { tagXY[i] = [x.asFloat + 1 / 2, y.asFloat + 1 / 2].clip(0, 1) };
+				// walking out plays a cycle of noisy on that tag's own speaker (walking in, nothing).
+				// Only a real exit counts: a drop ("N/A") isn't one, the first position
+				// plays nothing, and after a drop it plays only if the tag comes back outside
+				if(tagOut[i] and: { wasOut[i] == false }) { playShot.(v, \noisy) };
+				wasOut[i] = tagOut[i];
 				tagHeard[i] = Main.elapsedTime;
 			};
 		}, ("/tag" ++ (i + 1)).asSymbol, recvPort: uwbPort + i);
@@ -703,6 +729,7 @@ s.waitForBoot {
 				var age = now - tagHeard[i], to, rate, state;
 				case
 				{ drag == i } { state = \dragged }
+				{ (age < 0.6) and: { tagOut[i] } } { state = \outside }
 				{ age < 0.6 } { state = \live; to = tagXY[i]; rate = 12 }
 				{ simulate } {
 					state = \simulated;
@@ -713,10 +740,11 @@ s.waitForBoot {
 				{ age < holdS } { state = \held }
 				{ state = \lost; to = [0.5, 0.5]; rate = 1.5 };
 				if(state != \simulated) { goal[i] = pos[i].copy };
-				// a tag that has dropped out (holding, or gone dry) is taken off the pad
-				// and silenced (on its speaker and the laptop); it's back when it reports
-				if(((state == \held) or: { state == \lost }) != (v[\hidden] == true)) {
-					v[\hidden] = (state == \held) or: { state == \lost };
+				// a tag that has dropped out (holding, or gone dry) or walked out of the room
+				// is taken off the pad and its fader muted (on its speaker and the laptop);
+				// it's back at its fader's level when it reports from inside again
+				if([\held, \lost, \outside].includes(state) != (v[\hidden] == true)) {
+					v[\hidden] = [\held, \lost, \outside].includes(state);
 					v.mixer.set(\vol, if(v[\hidden]) { 0 } { v.vol });
 					moved = true;
 				};
@@ -727,9 +755,9 @@ s.waitForBoot {
 				};
 				if(state != shown[i]) {
 					shown[i] = state;
-					v.uwbText.string = (live: "UWB live", held: "dropped · holding", lost: "dropped · dry",
+					v.uwbText.string = (live: "UWB live", outside: "outside · muted", held: "dropped · holding", lost: "dropped · dry",
 						simulated: "no UWB · simulated", dragged: "dragging")[state];
-					v.uwbText.stringColor = (live: Color(0.45, 0.9, 0.5), held: Color(1, 0.8, 0.3),
+					v.uwbText.stringColor = (live: Color(0.45, 0.9, 0.5), outside: Color(0.7, 0.7, 0.7), held: Color(1, 0.8, 0.3),
 						lost: Color(0.95, 0.45, 0.4), simulated: Color(0.6, 0.85, 1), dragged: Color.white)[state];
 				};
 			};
