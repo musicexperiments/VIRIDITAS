@@ -7,11 +7,11 @@ compiling class library...
 	method table size 20758744 bytes, big table size 156826320
 	Number of Symbols 14986
 	Byte Code Size 449906
-	compiled 556 files in 0.20 seconds
+	compiled 556 files in 0.31 seconds
 compile done
 localhost : setting clientID to 0.
 internal : setting clientID to 0.
-Class tree inited in 0.04 seconds
+Class tree inited in 0.05 seconds
 
 
 *** Welcome to SuperCollider 3.14.1. *** For help type cmd-d.
@@ -40,13 +40,178 @@ Requested notification messages from server 'localhost'
 localhost: server process's maxLogins (1) matches with my options.
 localhost: keeping clientID (0) as confirmed by server process.
 Shared memory server interface initialized
-STREAM,board,10.10.10.82:4220
 STREAM,board,10.10.10.22:4220
 STREAM,server,48000 Hz -> 16000 Hz
+STREAM,board,10.10.10.82:4220
 STREAM,server,48000 Hz -> 16000 Hz
 STREAM,board,10.10.10.94:4220
 STREAM,server,48000 Hz -> 16000 Hz
 STREAM,board,10.10.10.185:4220
 STREAM,server,48000 Hz -> 16000 Hz
-SPEAKER,fill=5.0,received=67840,recovered=2,concealed=689,late=118,drift=+111/-0,rebuffers=19,rssi=-38
-SPEAKER,fill=5.0,received=59143,recovered=3,concealed=757,late=124,drift=+0/-0,rebuffers=21,rssi=-53
+SPEAKER,fill=4.9,received=70053,recovered=16,concealed=774,late=118,drift=+0/-1455,rebuffers=21,rssi=-52
+SPEAKER,fill=5.4,received=85677,recovered=1,concealed=697,late=125,drift=+2/-0,rebuffers=19,rssi=-55
+SPEAKER,fill=4.7,received=566,recovered=0,concealed=0,late=0,drift=+0/-0,rebuffers=0,rssi=-44
+SPEAKER,fill=5.0,received=59707,recovered=3,concealed=787,late=124,drift=+0/-0,rebuffers=22,rssi=-52
+SPEAKER,fill=4.9,received=70555,recovered=16,concealed=774,late=118,drift=+0/-1455,rebuffers=21,rssi=-51
+SPEAKER,fill=5.6,received=86182,recovered=1,concealed=697,late=125,drift=+2/-0,rebuffers=19,rssi=-54
+SPEAKER,fill=4.7,received=1067,recovered=0,concealed=0,late=0,drift=+0/-0,rebuffers=0,rssi=-62
+SPEAKER,fill=5.1,received=60208,recovered=3,concealed=787,late=124,drift=+0/-0,rebuffers=22,rssi=-54
+SPEAKER,fill=4.9,received=71059,recovered=16,concealed=774,late=118,drift=+0/-1455,rebuffers=21,rssi=-51
+SPEAKER,fill=5.6,received=86684,recovered=1,concealed=697,late=125,drift=+2/-0,rebuffers=19,rssi=-54
+SPEAKER,fill=4.6,received=1569,recovered=0,concealed=0,late=0,drift=+0/-0,rebuffers=0,rssi=-47
+SPEAKER,fill=5.0,received=60711,recovered=3,concealed=787,late=124,drift=+0/-0,rebuffers=22,rssi=-51
+SPEAKER,fill=4.9,received=71561,recovered=16,concealed=774,late=118,drift=+0/-1455,rebuffers=21,rssi=-51
+SPEAKER,fill=5.7,received=87186,recovered=1,concealed=697,late=125,drift=+2/-0,rebuffers=19,rssi=-54
+SPEAKER,fill=4.6,received=2071,recovered=0,concealed=0,late=0,drift=+0/-0,rebuffers=0,rssi=-53
+SPEAKER,fill=5.1,received=61213,recovered=3,concealed=787,late=124,drift=+0/-0,rebuffers=22,rssi=-49
+SPEAKER,fill=4.9,received=72065,recovered=16,concealed=774,late=118,drift=+0/-1455,rebuffers=21,rssi=-50
+SPEAKER,fill=5.7,received=87687,recovered=1,concealed=697,late=125,drift=+2/-0,rebuffers=19,rssi=-56
+SPEAKER,fill=4.6,received=2573,recovered=0,concealed=0,late=0,drift=+0/-0,rebuffers=0,rssi=-52
+SPEAKER,fill=5.1,received=61714,recovered=3,concealed=787,late=124,drift=+0/-0,rebuffers=22,rssi=-52
+SPEAKER,fill=4.8,received=72566,recovered=16,concealed=774,late=118,drift=+0/-1455,rebuffers=21,rssi=-50
+SPEAKER,fill=5.6,received=88191,recovered=1,concealed=697,late=125,drift=+2/-0,rebuffers=19,rssi=-57
+SPEAKER,fill=4.6,received=3076,recovered=0,concealed=0,late=0,drift=+0/-0,rebuffers=0,rssi=-60
+SPEAKER,fill=5.1,received=62218,recovered=3,concealed=787,late=124,drift=+0/-0,rebuffers=22,rssi=-51
+SPEAKER,fill=4.9,received=73069,recovered=16,concealed=774,late=118,drift=+0/-1455,rebuffers=21,rssi=-50
+SPEAKER,fill=5.7,received=88694,recovered=1,concealed=697,late=125,drift=+2/-0,rebuffers=19,rssi=-62
+SPEAKER,fill=4.6,received=3579,recovered=0,concealed=0,late=0,drift=+0/-0,rebuffers=0,rssi=-63
+SPEAKER,fill=5.1,received=62719,recovered=3,concealed=787,late=124,drift=+0/-0,rebuffers=22,rssi=-51
+SPEAKER,fill=4.6,received=73571,recovered=16,concealed=792,late=136,drift=+0/-1455,rebuffers=21,rssi=-51
+SPEAKER,fill=5.5,received=89195,recovered=1,concealed=712,late=140,drift=+2/-0,rebuffers=19,rssi=-53
+SPEAKER,fill=4.4,received=4080,recovered=0,concealed=19,late=19,drift=+0/-0,rebuffers=0,rssi=-54
+SPEAKER,fill=4.9,received=63220,recovered=3,concealed=804,late=141,drift=+0/-0,rebuffers=22,rssi=-51
+SPEAKER,fill=4.8,received=74072,recovered=16,concealed=792,late=136,drift=+0/-1455,rebuffers=21,rssi=-51
+SPEAKER,fill=5.6,received=89696,recovered=1,concealed=712,late=140,drift=+2/-0,rebuffers=19,rssi=-57
+SPEAKER,fill=4.6,received=4583,recovered=0,concealed=19,late=19,drift=+0/-0,rebuffers=0,rssi=-52
+SPEAKER,fill=5.0,received=63720,recovered=3,concealed=804,late=141,drift=+0/-0,rebuffers=22,rssi=-51
+SPEAKER,fill=4.9,received=74573,recovered=16,concealed=792,late=136,drift=+0/-1455,rebuffers=21,rssi=-51
+SPEAKER,fill=5.7,received=90198,recovered=1,concealed=712,late=140,drift=+2/-0,rebuffers=19,rssi=-56
+SPEAKER,fill=4.6,received=5085,recovered=0,concealed=19,late=19,drift=+0/-0,rebuffers=0,rssi=-56
+SPEAKER,fill=5.1,received=64221,recovered=3,concealed=804,late=141,drift=+0/-0,rebuffers=22,rssi=-51
+SPEAKER,fill=4.9,received=75076,recovered=16,concealed=792,late=136,drift=+0/-1455,rebuffers=21,rssi=-51
+SPEAKER,fill=5.7,received=90701,recovered=1,concealed=712,late=140,drift=+2/-0,rebuffers=19,rssi=-54
+SPEAKER,fill=4.7,received=5587,recovered=0,concealed=19,late=19,drift=+0/-0,rebuffers=0,rssi=-47
+SPEAKER,fill=5.1,received=64724,recovered=3,concealed=804,late=141,drift=+0/-0,rebuffers=22,rssi=-51
+SPEAKER,fill=4.0,received=75554,recovered=16,concealed=817,late=142,drift=+0/-1455,rebuffers=21,rssi=-51
+SPEAKER,fill=4.4,received=91183,recovered=2,concealed=742,late=157,drift=+2/-0,rebuffers=20,rssi=-55
+SPEAKER,fill=5.0,received=65172,recovered=5,concealed=865,late=175,drift=+0/-0,rebuffers=24,rssi=-52
+SPEAKER,fill=3.9,received=75818,recovered=28,concealed=1191,late=327,drift=+0/-1455,rebuffers=33,rssi=-51
+SPEAKER,fill=4.9,received=91435,recovered=12,concealed=1056,late=314,drift=+2/-0,rebuffers=30,rssi=-54
+SPEAKER,fill=3.9,received=65426,recovered=15,concealed=1193,late=335,drift=+0/-0,rebuffers=34,rssi=-51
+SPEAKER,fill=3.8,received=91675,recovered=23,concealed=1389,late=470,drift=+2/-0,rebuffers=41,rssi=-54
+SPEAKER,fill=3.8,received=76064,recovered=40,concealed=1560,late=496,drift=+0/-1455,rebuffers=46,rssi=-51
+SPEAKER,fill=4.9,received=65669,recovered=26,concealed=1503,late=476,drift=+0/-0,rebuffers=45,rssi=-52
+SPEAKER,fill=6.9,received=76489,recovered=47,concealed=1742,late=552,drift=+0/-1555,rebuffers=52,rssi=-52
+SPEAKER,fill=6.9,received=92091,recovered=27,concealed=1571,late=541,drift=+2/-77,rebuffers=46,rssi=-53
+SPEAKER,fill=6.9,received=66059,recovered=30,concealed=1649,late=525,drift=+0/-96,rebuffers=50,rssi=-52
+SPEAKER,fill=7.4,received=76748,recovered=49,concealed=1772,late=552,drift=+0/-1617,rebuffers=53,rssi=-48
+SPEAKER,fill=7.3,received=92350,recovered=28,concealed=1601,late=541,drift=+2/-139,rebuffers=47,rssi=-62
+SPEAKER,fill=7.3,received=66316,recovered=31,concealed=1679,late=525,drift=+0/-158,rebuffers=51,rssi=-52
+SPEAKER,fill=5.3,received=92647,recovered=29,concealed=1601,late=541,drift=+2/-139,rebuffers=47,rssi=-59
+SPEAKER,fill=4.9,received=77043,recovered=50,concealed=1772,late=552,drift=+0/-1617,rebuffers=53,rssi=-60
+SPEAKER,fill=5.0,received=66661,recovered=32,concealed=1679,late=525,drift=+0/-158,rebuffers=51,rssi=-52
+SPEAKER,fill=4.2,received=92993,recovered=29,concealed=1631,late=541,drift=+2/-139,rebuffers=48,rssi=-49
+SPEAKER,fill=3.7,received=77389,recovered=50,concealed=1802,late=552,drift=+0/-1617,rebuffers=54,rssi=-60
+SPEAKER,fill=3.8,received=66957,recovered=32,concealed=1709,late=525,drift=+0/-158,rebuffers=52,rssi=-52
+SPEAKER,fill=7.1,received=93248,recovered=30,concealed=1661,late=541,drift=+2/-199,rebuffers=49,rssi=-54
+SPEAKER,fill=7.2,received=77648,recovered=52,concealed=1832,late=552,drift=+0/-1678,rebuffers=55,rssi=-61
+SPEAKER,fill=7.2,received=67217,recovered=34,concealed=1739,late=525,drift=+0/-219,rebuffers=53,rssi=-53
+SPEAKER,fill=7.2,received=93510,recovered=31,concealed=1691,late=541,drift=+2/-259,rebuffers=50,rssi=-47
+SPEAKER,fill=7.2,received=77910,recovered=53,concealed=1862,late=552,drift=+0/-1738,rebuffers=56,rssi=-51
+SPEAKER,fill=7.2,received=67479,recovered=35,concealed=1769,late=525,drift=+0/-279,rebuffers=54,rssi=-54
+SPEAKER,fill=4.9,received=78299,recovered=54,concealed=1862,late=552,drift=+0/-1738,rebuffers=56,rssi=-54
+SPEAKER,fill=4.8,received=93899,recovered=32,concealed=1691,late=541,drift=+2/-259,rebuffers=50,rssi=-59
+SPEAKER,fill=5.1,received=67921,recovered=36,concealed=1769,late=525,drift=+0/-279,rebuffers=54,rssi=-48
+SPEAKER,fill=4.8,received=94400,recovered=32,concealed=1691,late=541,drift=+2/-259,rebuffers=50,rssi=-38
+SPEAKER,fill=4.9,received=78802,recovered=54,concealed=1862,late=552,drift=+0/-1738,rebuffers=56,rssi=-33
+SPEAKER,fill=5.1,received=68425,recovered=36,concealed=1769,late=525,drift=+0/-279,rebuffers=54,rssi=-40
+SPEAKER,fill=4.8,received=94902,recovered=32,concealed=1691,late=541,drift=+2/-259,rebuffers=50,rssi=-27
+SPEAKER,fill=5.0,received=79305,recovered=54,concealed=1862,late=552,drift=+0/-1738,rebuffers=56,rssi=-34
+SPEAKER,fill=5.2,received=68928,recovered=36,concealed=1769,late=525,drift=+0/-279,rebuffers=54,rssi=-51
+SPEAKER,fill=4.8,received=95406,recovered=32,concealed=1691,late=541,drift=+2/-259,rebuffers=50,rssi=-27
+SPEAKER,fill=5.0,received=79808,recovered=54,concealed=1862,late=552,drift=+0/-1738,rebuffers=56,rssi=-34
+SPEAKER,fill=5.2,received=69431,recovered=36,concealed=1769,late=525,drift=+0/-279,rebuffers=54,rssi=-47
+SPEAKER,fill=4.8,received=95909,recovered=32,concealed=1691,late=541,drift=+2/-259,rebuffers=50,rssi=-30
+SPEAKER,fill=5.0,received=80311,recovered=54,concealed=1862,late=552,drift=+0/-1738,rebuffers=56,rssi=-37
+SPEAKER,fill=5.2,received=69933,recovered=36,concealed=1769,late=525,drift=+0/-279,rebuffers=54,rssi=-47
+SPEAKER,fill=4.8,received=96412,recovered=32,concealed=1691,late=541,drift=+2/-259,rebuffers=50,rssi=-24
+SPEAKER,fill=5.0,received=80813,recovered=54,concealed=1862,late=552,drift=+0/-1738,rebuffers=56,rssi=-34
+SPEAKER,fill=5.2,received=70435,recovered=36,concealed=1769,late=525,drift=+0/-279,rebuffers=54,rssi=-46
+SPEAKER,fill=5.0,received=81316,recovered=54,concealed=1862,late=552,drift=+0/-1738,rebuffers=56,rssi=-36
+SPEAKER,fill=4.8,received=96916,recovered=32,concealed=1691,late=541,drift=+2/-259,rebuffers=50,rssi=-27
+SPEAKER,fill=5.2,received=70936,recovered=36,concealed=1769,late=525,drift=+0/-279,rebuffers=54,rssi=-45
+SPEAKER,fill=4.8,received=97418,recovered=32,concealed=1691,late=541,drift=+2/-259,rebuffers=50,rssi=-21
+SPEAKER,fill=5.0,received=81819,recovered=54,concealed=1862,late=552,drift=+0/-1738,rebuffers=56,rssi=-35
+SPEAKER,fill=5.2,received=71438,recovered=36,concealed=1769,late=525,drift=+0/-279,rebuffers=54,rssi=-44
+SPEAKER,fill=4.7,received=82180,recovered=59,concealed=2026,late=632,drift=+0/-1738,rebuffers=61,rssi=-38
+SPEAKER,fill=4.8,received=71780,recovered=42,concealed=1957,late=615,drift=+0/-279,rebuffers=60,rssi=-43
+SPEAKER,fill=4.4,received=82431,recovered=69,concealed=2335,late=785,drift=+0/-1738,rebuffers=71,rssi=-34
+SPEAKER,fill=4.5,received=72030,recovered=52,concealed=2276,late=773,drift=+0/-279,rebuffers=70,rssi=-42
+SPEAKER,fill=4.9,received=82687,recovered=79,concealed=2625,late=933,drift=+0/-1738,rebuffers=81,rssi=-36
+SPEAKER,fill=3.7,received=72284,recovered=63,concealed=2594,late=924,drift=+0/-279,rebuffers=81,rssi=-44
+SPEAKER,fill=4.3,received=82773,recovered=83,concealed=2737,late=986,drift=+0/-1738,rebuffers=84,rssi=-35
+SPEAKER,fill=3.9,received=72372,recovered=66,concealed=2720,late=973,drift=+0/-279,rebuffers=84,rssi=-43
+SPEAKER,fill=3.8,received=82981,recovered=92,concealed=3027,late=1108,drift=+0/-1738,rebuffers=94,rssi=-34
+SPEAKER,fill=3.7,received=72549,recovered=74,concealed=2942,late=1074,drift=+0/-279,rebuffers=92,rssi=-42
+SPEAKER,fill=3.7,received=83010,recovered=94,concealed=3058,late=1125,drift=+0/-1738,rebuffers=95,rssi=-36
+SPEAKER,fill=4.9,received=72606,recovered=77,concealed=3006,late=1103,drift=+0/-279,rebuffers=94,rssi=-46
+SPEAKER,fill=3.8,received=83240,recovered=103,concealed=3367,late=1258,drift=+0/-1738,rebuffers=105,rssi=-53
+SPEAKER,fill=3.8,received=72809,recovered=85,concealed=3278,late=1228,drift=+0/-279,rebuffers=103,rssi=-53
+SPEAKER,fill=5.0,received=83272,recovered=105,concealed=3399,late=1273,drift=+0/-1738,rebuffers=106,rssi=-52
+SPEAKER,fill=4.6,received=72870,recovered=88,concealed=3352,late=1262,drift=+0/-279,rebuffers=105,rssi=-58
+SPEAKER,fill=3.9,received=83525,recovered=114,concealed=3704,late=1425,drift=+0/-1738,rebuffers=115,rssi=-65
+SPEAKER,fill=5.0,received=73130,recovered=98,concealed=3652,late=1414,drift=+0/-279,rebuffers=115,rssi=-61
+SPEAKER,fill=3.8,received=83581,recovered=117,concealed=3798,late=1454,drift=+0/-1738,rebuffers=119,rssi=-66
+SPEAKER,fill=3.8,received=73152,recovered=99,concealed=3712,late=1426,drift=+0/-279,rebuffers=117,rssi=-74
+SPEAKER,fill=4.3,received=83682,recovered=122,concealed=3917,late=1514,drift=+0/-1738,rebuffers=122,rssi=-60
+SPEAKER,fill=3.7,received=73289,recovered=105,concealed=3873,late=1501,drift=+0/-279,rebuffers=122,rssi=-65
+SPEAKER,fill=3.7,received=83838,recovered=128,concealed=4113,late=1606,drift=+0/-1738,rebuffers=129,rssi=-57
+SPEAKER,fill=3.7,received=73406,recovered=109,concealed=4032,late=1564,drift=+0/-279,rebuffers=127,rssi=-67
+SPEAKER,fill=3.7,received=83935,recovered=133,concealed=4236,late=1665,drift=+0/-1738,rebuffers=133,rssi=-70
+SPEAKER,fill=4.5,received=73543,recovered=115,concealed=4210,late=1645,drift=+0/-279,rebuffers=132,rssi=-69
+SPEAKER,fill=3.8,received=84097,recovered=139,concealed=4457,late=1752,drift=+0/-1738,rebuffers=140,rssi=-62
+SPEAKER,fill=3.7,received=73666,recovered=120,concealed=4383,late=1713,drift=+0/-279,rebuffers=138,rssi=-63
+SPEAKER,fill=4.9,received=84178,recovered=143,concealed=4555,late=1801,drift=+0/-1738,rebuffers=143,rssi=-60
+SPEAKER,fill=4.9,received=73782,recovered=126,concealed=4540,late=1780,drift=+0/-279,rebuffers=143,rssi=-61
+SPEAKER,fill=4.8,received=84416,recovered=153,concealed=4858,late=1945,drift=+0/-1738,rebuffers=153,rssi=-64
+SPEAKER,fill=3.8,received=73998,recovered=135,concealed=4849,late=1909,drift=+0/-279,rebuffers=153,rssi=-56
+SPEAKER,fill=3.7,received=84426,recovered=153,concealed=4883,late=1955,drift=+0/-1738,rebuffers=154,rssi=-61
+SPEAKER,fill=3.8,received=73998,recovered=135,concealed=4849,late=1909,drift=+0/-279,rebuffers=153,rssi=-58
+SPEAKER,fill=4.4,received=84583,recovered=160,concealed=5086,late=2047,drift=+0/-1738,rebuffers=160,rssi=-61
+SPEAKER,fill=4.8,received=74212,recovered=145,concealed=5105,late=2037,drift=+0/-279,rebuffers=161,rssi=-56
+SPEAKER,fill=3.7,received=84684,recovered=164,concealed=5222,late=2106,drift=+0/-1738,rebuffers=165,rssi=-56
+SPEAKER,fill=3.8,received=74253,recovered=147,concealed=5189,late=2063,drift=+0/-279,rebuffers=164,rssi=-57
+SPEAKER,fill=4.9,received=84845,recovered=171,concealed=5419,late=2195,drift=+0/-1738,rebuffers=171,rssi=-58
+SPEAKER,fill=4.8,received=74462,recovered=156,concealed=5449,late=2181,drift=+0/-279,rebuffers=172,rssi=-57
+SPEAKER,fill=3.7,received=84944,recovered=175,concealed=5570,late=2257,drift=+0/-1738,rebuffers=176,rssi=-72
+SPEAKER,fill=3.7,received=74513,recovered=158,concealed=5532,late=2212,drift=+0/-279,rebuffers=175,rssi=-58
+SPEAKER,fill=3.7,received=85096,recovered=181,concealed=5761,late=2352,drift=+0/-1738,rebuffers=182,rssi=-49
+SPEAKER,fill=3.7,received=74722,recovered=167,concealed=5788,late=2339,drift=+0/-279,rebuffers=183,rssi=-62
+SPEAKER,fill=3.8,received=85286,recovered=189,concealed=6007,late=2464,drift=+0/-1738,rebuffers=190,rssi=-61
+SPEAKER,fill=3.7,received=74852,recovered=172,concealed=5945,late=2407,drift=+0/-279,rebuffers=188,rssi=-58
+SPEAKER,fill=3.8,received=85286,recovered=189,concealed=6007,late=2464,drift=+0/-1738,rebuffers=190,rssi=-66
+SPEAKER,fill=3.8,received=74872,recovered=173,concealed=5976,late=2417,drift=+0/-279,rebuffers=188,rssi=-59
+SPEAKER,fill=5.0,received=85511,recovered=199,concealed=6289,late=2596,drift=+0/-1738,rebuffers=199,rssi=-69
+SPEAKER,fill=3.7,received=75107,recovered=183,concealed=6267,late=2557,drift=+0/-279,rebuffers=198,rssi=-56
+SPEAKER,fill=3.7,received=85538,recovered=200,concealed=6354,late=2613,drift=+0/-1738,rebuffers=201,rssi=-59
+SPEAKER,fill=4.9,received=75116,recovered=184,concealed=6269,late=2558,drift=+0/-279,rebuffers=198,rssi=-55
+SPEAKER,fill=4.0,received=85743,recovered=209,concealed=6633,late=2728,drift=+0/-1738,rebuffers=209,rssi=-64
+SPEAKER,fill=4.9,received=75356,recovered=194,concealed=6588,late=2701,drift=+0/-279,rebuffers=208,rssi=-57
+SPEAKER,fill=3.7,received=85797,recovered=211,concealed=6703,late=2759,drift=+0/-1738,rebuffers=212,rssi=-56
+SPEAKER,fill=3.7,received=75366,recovered=194,concealed=6614,late=2711,drift=+0/-279,rebuffers=209,rssi=-58
+SPEAKER,fill=4.5,received=85997,recovered=219,concealed=6939,late=2876,drift=+0/-1738,rebuffers=219,rssi=-55
+SPEAKER,fill=4.9,received=75611,recovered=204,concealed=6897,late=2854,drift=+0/-279,rebuffers=218,rssi=-59
+SPEAKER,fill=3.9,received=75803,recovered=213,concealed=7199,late=2971,drift=+0/-279,rebuffers=227,rssi=-57
+SPEAKER,fill=4.4,received=76004,recovered=223,concealed=7503,late=3091,drift=+0/-279,rebuffers=237,rssi=-59
+SPEAKER,fill=3.7,received=76268,recovered=233,concealed=7826,late=3251,drift=+0/-279,rebuffers=248,rssi=-57
+SPEAKER,fill=4.9,received=76517,recovered=244,concealed=8111,late=3396,drift=+0/-279,rebuffers=257,rssi=-58
+SPEAKER,fill=3.7,received=76529,recovered=244,concealed=8141,late=3407,drift=+0/-279,rebuffers=258,rssi=-59
+SPEAKER,fill=3.7,received=76787,recovered=254,concealed=8453,late=3561,drift=+0/-279,rebuffers=268,rssi=-57
+SPEAKER,fill=5.0,received=76797,recovered=255,concealed=8453,late=3561,drift=+0/-279,rebuffers=268,rssi=-57
+SPEAKER,fill=4.3,received=77053,recovered=264,concealed=8750,late=3711,drift=+0/-279,rebuffers=277,rssi=-62
+SPEAKER,fill=3.7,received=77132,recovered=267,concealed=8857,late=3754,drift=+0/-279,rebuffers=281,rssi=-56
+SPEAKER,fill=4.7,received=77229,recovered=272,concealed=8964,late=3804,drift=+0/-279,rebuffers=284,rssi=-60
+STREAM,waiting,start supercollider/sine_stream.scd
+STREAM,waiting,start supercollider/sine_stream.scd
+STREAM,waiting,start supercollider/sine_stream.scd
+STREAM,waiting,start supercollider/sine_stream.scd
