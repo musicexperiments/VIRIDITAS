@@ -68,11 +68,28 @@
 //   plays as the tag walks out and is muted). Walking in plays nothing.
 //   A new exit restarts the tag's cycle if it's still playing.
 //   oneShotAmp sets its level. A tag dropping out is not an exit.
+// - Play mode (PLAY_MODE in startUwb.sh, FOUR_TAGS_MODE here; ~fourTagsMode
+//   from the IDE, 1 if neither):
+//     1 absolute: everything above, each tag's effects follow where it is in the room.
+//     2 relative: each tag's three effects follow its distances to the other
+//       three tags, closer is more (none at corner to corner, full on the same spot):
+//         1 kalimba: d12 Echo, d13 PitShift, d14 Stutter
+//         2 flute:   d12 SinOscFB, d23 slower, d24 grains
+//         3 apad:    d13 Greyhole, d23 grains, d34 stutter
+//         4 sine:    d14 Squiz, d24 LFPulse, d34 Stutter
+//       dAB comes in every /tagN message from uwb.py (the same -1..1 x, y space
+//       over corner to corner: 0 the same spot, 1 corner to corner). A pair is
+//       dry while either tag is dropped or outside the room. The pad draws a line
+//       between every pair it has, with its distance; no random quarters.
+//       Simulated and dragged dots get their distances from where they are on the pad.
+//     Walking out (mute and the noisy cycle), dropping out and the soundscape
+//     work the same in both.
 
 (
 // this folder (VIRIDITAS/supercollider): the SynthDefs and pbind-demos it loads are here
 var dir = thisProcess.nowExecutingPath !? { |p| p.dirname } ? "/Users/meatmini/Desktop/VIRIDITAS/supercollider";
 var uwbPort = ("UWB_SC_PORT".getenv ? "9100").asInteger;   // /tag1 here, /tag2 on the next port, ...
+var mode = ("FOUR_TAGS_MODE".getenv ? ~fourTagsMode ? 1).asInteger.clip(1, 2);   // 1 absolute, 2 relative
 ~viriditas = "VIRIDITAS_DIR".getenv ? ~viriditas ? dir.dirname;
 if("FOUR_TAGS_STANDALONE".getenv == "1") { ~fourTagsFXStandalone = true; ~fourTagsFXStreamOnStart = true };
 s.options.memSize = 2 ** 18;   // Greyhole, Squiz and the echoes use long delay lines
@@ -85,11 +102,12 @@ s.waitForBoot {
 	var playVoice, stopVoice, play, stop, startStream, stopStream, playShot;
 	var pitShift;
 	var pad, pos, order, drag, toPix, fromPix, setDot, applyDot, randomizers, padSize = 440, dotR = 13;
-	var simulate = false, motion, padW, padH, room, tagXY, tagHeard, tagOut, holdS = 3;
+	var simulate = false, manual = false, manualDrop = nil ! 4, setDrop, motion, padW, padH, room, tagXY, tagHeard, tagOut, holdS = 3;
 	var toPixIn, drawPad, full, fullView, toggleFull, refreshPads, keys;
 	var winW, winH, colW = 470, rowStep = 110, contentH, bottomY;
 	var dayBuf, daySynth, dayAmp = 1, wasOut, oneShotAmp = 1;
 	var mixWin, meters, makeMixer, volSpec = ControlSpec(0, 2, \amp);
+	var tagD, tagDist, dKey, pairD, applyDists, fmt2, distText, showDists;
 
 	[
 		"SynthDefs/percussion/kalimba.scd", "pbind-demos/kalimba-demo.scd",
@@ -217,8 +235,9 @@ s.waitForBoot {
 		ReplaceOut.ar(bus, Limiter.ar(XFade2.ar(dry, wet, a.linlin(0, 1, -1, 0.6)), 0.95));
 	}).add;
 
-	// from apadMH-stutter.scd: a 95 BPM pulsing low-pass and a ghost high-pass from the pad's own loudness
-	SynthDef(\ftApadStutter, { |bus, amount = 0, bpm = 95, lpMin = 120, hpMax = 1480, ghostGain = 3.5, fall = 0.2, openFrac = 0.25, makeup = 8|
+	// from apadMH-stutter.scd: a 95 BPM pulsing low-pass and a ghost high-pass from the sound's own loudness
+	// (the apad's stutter, and in mode 2 the kalimba's and the sine's too)
+	SynthDef(\ftStutter, { |bus, amount = 0, bpm = 95, lpMin = 120, hpMax = 1480, ghostGain = 3.5, fall = 0.2, openFrac = 0.25, makeup = 8|
 		var dry = In.ar(bus, 2), sig = dry, a = amount.lag(0.15), beat = 60 / bpm;
 		var wob, rate, pulse, lpFreq, env, ghost, hpFreq;
 		wob = LFTri.kr(3 / beat, 2).lag(beat * 0.08);
@@ -283,11 +302,14 @@ s.waitForBoot {
 	kalimba = (
 		tag: "Tag 1", title: "Kalimba  ·  Echo + PitShift", host: "uwb-tag.local", vol: 0.9, color: Color(1, 0.65, 0.3), axes: "→ right: Echo     ↓ below middle: PitShift (up to an octave up)     ↖ top left: random",
 		xDir: 1, yDir: -1, randQuad: [-1, 1],
+		distFx: ["Echo", "PitShift", "Stutter"],
 		makeFx: { |v|
+			v.stutterFx = Synth.tail(v.fxGroup, \ftStutter, [bus: v.bus]);   // mode 2 only
 			v.pitFx = Synth.tail(v.fxGroup, \ftPitShift, [bus: v.bus]);
-			v.echoFx = Synth.tail(v.fxGroup, \ftEcho, [bus: v.bus]);   // kalimba -> PitShift -> echo
+			v.echoFx = Synth.tail(v.fxGroup, \ftEcho, [bus: v.bus]);   // kalimba -> stutter -> PitShift -> echo
 		},
 		setXY: { |v, x, y| v.echoFx.set(\amount, x); v.pitFx.set(\amount, y) },
+		setDist: { |v, a| v.echoFx.set(\amount, a[0]); v.pitFx.set(\amount, a[1]); v.stutterFx.set(\amount, a[2]) },
 		readout: { |v, x, y|
 			[
 				"Echo: %  ·  %\\%".format(
@@ -304,6 +326,7 @@ s.waitForBoot {
 	flute = (
 		tag: "Tag 2", title: "Flute  ·  SinOscFB + speed / grains", host: "uwb-tag2.local", vol: 0.9, color: Color(0.4, 0.85, 1), axes: "→ right: SinOscFB     ↑ above: slower   ↓ below: grains     ↗ top right: random", splitY: true,
 		xDir: 1, randQuad: [1, 1],
+		distFx: ["SinOscFB", "Slower", "Grains"],
 		// up / down: middle = normal; top half slows to half speed, bottom half adds grains
 		slowAmt: { |v, y| (y - 0.5).max(0) * 2 },
 		grainAmt: { |v, y| (0.5 - y).max(0) * 2 },
@@ -321,6 +344,12 @@ s.waitForBoot {
 			v.amountBus.set(x);
 			v.tempoClock.tempo = 2 ** v.slowAmt(y).neg;
 			v.grainsFx.set(\amount, v.grainAmt(y));
+		},
+		setDist: { |v, a|
+			v.fbFx.set(\amount, a[0]);
+			v.amountBus.set(a[0]);
+			v.tempoClock.tempo = 2 ** a[1].neg;   // full: half speed
+			v.grainsFx.set(\amount, a[2]);
 		},
 		readout: { |v, x, y|
 			var g = v.grainAmt(y);
@@ -352,11 +381,12 @@ s.waitForBoot {
 		tag: "Tag 3", title: "apadMH  ·  Greyhole + grains / stutter", host: "uwb-tag3.local", vol: 1.5, color: Color(0.8, 0.6, 1),
 		axes: "→ right: Greyhole     ↑ above: grains   ↓ below: stutter     ↙ bottom left: random", splitY: true,
 		xDir: 1, randQuad: [-1, -1],
+		distFx: ["Greyhole", "Grains", "Stutter"],
 		// up / down is split at the middle like the flute's: above = grains, below = stutter
 		grainAmt: { |v, y| (y - 0.5).max(0) * 2 },
 		stutterAmt: { |v, y| (0.5 - y).max(0) * 2 },
 		makeFx: { |v|
-			v.stutterFx = Synth.tail(v.fxGroup, \ftApadStutter, [bus: v.bus]);
+			v.stutterFx = Synth.tail(v.fxGroup, \ftStutter, [bus: v.bus]);
 			v.grainFx = Synth.tail(v.fxGroup, \ftApadGrains, [bus: v.bus]);
 			v.greyholeFx = Synth.tail(v.fxGroup, \ftApadGreyhole, [bus: v.bus]);   // pad -> stutter -> grains -> Greyhole
 		},
@@ -365,6 +395,7 @@ s.waitForBoot {
 			v.grainFx.set(\amount, v.grainAmt(y));
 			v.stutterFx.set(\amount, v.stutterAmt(y));
 		},
+		setDist: { |v, a| v.greyholeFx.set(\amount, a[0]); v.grainFx.set(\amount, a[1]); v.stutterFx.set(\amount, a[2]) },
 		readout: { |v, x, y|
 			var g = v.grainAmt(y), st = v.stutterAmt(y);
 			[
@@ -391,11 +422,14 @@ s.waitForBoot {
 	sine = (
 		tag: "Tag 4", title: "vintageSine  ·  Squiz + LFPulse", host: "uwb-tag4.local", vol: 0.9, color: Color(0.55, 0.9, 0.5), axes: "← left: Squiz     ↑ above middle: LFPulse     ↘ bottom right: random",
 		xDir: -1, yDir: 1, randQuad: [1, -1],
+		distFx: ["Squiz", "LFPulse", "Stutter"],
 		makeFx: { |v|
+			v.stutterFx = Synth.tail(v.fxGroup, \ftStutter, [bus: v.bus]);   // mode 2 only
 			v.squizFx = Synth.tail(v.fxGroup, \ftSineSquiz, [bus: v.bus]);
-			v.pulseFx = Synth.tail(v.fxGroup, \ftSinePulse, [bus: v.bus]);   // vintageSine -> Squiz -> LFPulse
+			v.pulseFx = Synth.tail(v.fxGroup, \ftSinePulse, [bus: v.bus]);   // vintageSine -> stutter -> Squiz -> LFPulse
 		},
 		setXY: { |v, x, y| v.squizFx.set(\amount, x); v.pulseFx.set(\amount, y, \squiz, x) },
+		setDist: { |v, a| v.squizFx.set(\amount, a[0]); v.pulseFx.set(\amount, a[1], \squiz, a[0]); v.stutterFx.set(\amount, a[2]) },
 		readout: { |v, x, y|
 			[
 				"Squiz: %  ·  %\\%".format(
@@ -413,6 +447,7 @@ s.waitForBoot {
 	voices.do { |v, i|
 		v.buf = 900 + i;
 		v.statusPort = 57200 + i;
+		v.partners = (0..3).reject(_ == i);   // the other tags, in order: mode 2's three distances
 		v.bus = Bus.audio(s, 2);
 		v.shotBus = Bus.audio(s, 2);
 		v.ring = Buffer.alloc(s, s.sampleRate.asInteger, 1, bufnum: v.buf);   // 1 s
@@ -514,14 +549,15 @@ s.waitForBoot {
 	contentH = max(padH, 4 * rowStep - 6);
 	winW = 16 + padW + 14 + colW + 12;
 	bottomY = 44 + contentH + 10;
-	winH = bottomY + 34;
-	win = Window("Four Tags FX", Rect(20, 20, winW, winH), resizable: false);
+	winH = bottomY + 34 + if(mode == 2) { 26 } { 0 };   // mode 2: a row of the six distances
+	win = Window("Four Tags FX · mode %".format(mode), Rect(20, 20, winW, winH), resizable: false);
 	win.background = Color.gray(0.13);
 
 	StaticText(win, Rect(16, 6, 140, 28))
 	.string_("Four Tags FX").font_(font.(18, true)).stringColor_(Color.white);
 	StaticText(win, Rect(150, 11, winW - 260, 20))
-	.string_("dots follow the UWB tags (/tagN, port %+) · drag to override · space play/stop · f full screen".format(uwbPort))
+	.string_(if(mode == 1) { "mode 1 absolute · " } { "mode 2 relative: closer is more · " }
+		++ "dots follow the UWB tags (/tagN, port %+) · drag to override · space play/stop · f full screen".format(uwbPort))
 	.font_(font.(11)).stringColor_(Color.gray(0.65));
 
 	playButton = Button(win, Rect(winW - 96, 8, 84, 26))
@@ -550,17 +586,20 @@ s.waitForBoot {
 	// 4 bottom right. The deeper into its corner, the further the tag's effects
 	// wander from where the dot is towards a random setting (0 on the quarter's
 	// edges, fully random in the corner)
+	// (mode 1 only: in mode 2 applyDists sets the effects)
 	applyDot = { |i|
 		var v = voices[i], xy = pos[i], target = v[\randTarget] ? [0, 0];
 		var dx = xy[0] - 0.5, dy = xy[1] - 0.5;
 		var x = (dx * v.xDir).max(0) * 2;
 		var y = if(v[\splitY] == true) { xy[1] } { (dy * v.yDir).max(0) * 2 };
 		var r = min(dx * v.randQuad[0], dy * v.randQuad[1]).max(0) * 2;
-		v[\randDepth] = r;
-		x = x + (r * (target[0] - x));
-		y = y + (r * (target[1] - y));
-		v.setXY(x, y);
-		v[\showFn].(x, y);
+		if(mode == 1) {
+			v[\randDepth] = r;
+			x = x + (r * (target[0] - x));
+			y = y + (r * (target[1] - y));
+			v.setXY(x, y);
+			v[\showFn].(x, y);
+		};
 	};
 
 	setDot = { |i, xy|
@@ -581,6 +620,44 @@ s.waitForBoot {
 		}.play(AppClock)
 	};
 
+	// --- mode 2: the distances between the tags ---
+	// dKey: the name of a pair's distance in /tagN (tag indices 0-3: dKey.(0, 2) is "d13").
+	// tagD[i][j]: the distance from tag i to tag j in tag i's last /tagN, nil while "N/A".
+	// pairD: the distance a pair plays with: the bridge's while both tags are live;
+	// worked out from the pad (the same space: 0 the same spot, 1 corner to corner)
+	// while one is simulated or dragged and the other is too or live; nil (dry)
+	// while either is dropped or outside the room. tagDist holds it for the pad's lines.
+	dKey = { |i, j| "d%%".format(min(i, j) + 1, max(i, j) + 1) };
+	tagD = nil ! 4;
+	tagDist = { nil ! 4 } ! 4;
+	pairD = { |i, j|
+		var si = voices[i][\state], sj = voices[j][\state], on = [\live, \simulated, \dragged, \manual];
+		case
+		{ (si == \live) and: { sj == \live } } { tagD[min(i, j)] !? { |d| d[max(i, j)] } }
+		{ on.includes(si) and: { on.includes(sj) } } { ((pos[i] - pos[j]).squared.sum.sqrt / 2.sqrt).min(1) }
+		{ nil }
+	};
+	// each tag's three effects follow its distances to the other three, in tag
+	// order (tag 1: d12, d13, d14), closer is more: 1 - d, so none at corner to
+	// corner and dry with no distance. Sent only when they change; true if any did
+	applyDists = {
+		var changed = false;
+		voices.do { |v, i| v.partners.do { |j| tagDist[i][j] = pairD.(i, j) } };
+		voices.do { |v, i|
+			var ds = v.partners.collect { |j| tagDist[i][j] };
+			var amts = ds.collect { |d| 1 - (d ? 1) };
+			if(amts.round(0.001) != v[\distAmts]) {
+				v[\distAmts] = amts.round(0.001);
+				v.setDist(amts);
+				v[\showDist].(ds, amts);
+				changed = true;
+			};
+		};
+		if(changed) { showDists.() };
+		changed
+	};
+	fmt2 = { |d| var n = (d * 100).round.asInteger; "%.%".format(n div: 100, (n % 100).asString.padLeft(2, "0")) };
+
 	// the room's outline, centred down the side of the rows
 	// the room on a w x h view: grid, random quarters, anchors and the dots
 	// (radius r); big scales the lines and labels. Used by the pad and by the
@@ -598,13 +675,35 @@ s.waitForBoot {
 		Pen.line(Point(w / 2, 0), Point(w / 2, h));
 		Pen.line(Point(0, h / 2), Point(w, h / 2));
 		Pen.stroke;
-		voices.do { |v, i|
-			var q = Rect(if(v.randQuad[0] < 0) { 0 } { w / 2 }, if(v.randQuad[1] > 0) { 0 } { h / 2 }, w / 2, h / 2);
-			Pen.stringCenteredIn("% random".format(i + 1), q, font.(16 * big, true), v.color.copy.alpha_(0.3));
+		if(mode == 1) {
+			voices.do { |v, i|
+				var q = Rect(if(v.randQuad[0] < 0) { 0 } { w / 2 }, if(v.randQuad[1] > 0) { 0 } { h / 2 }, w / 2, h / 2);
+				Pen.stringCenteredIn("% random".format(i + 1), q, font.(16 * big, true), v.color.copy.alpha_(0.3));
+			};
 		};
 		// the anchors in their corners, Anchor 1 top-left, then clockwise
 		[["A1", 4, 3], ["A2", w - (22 * big), 3], ["A3", w - (22 * big), h - (17 * big)], ["A4", 4, h - (17 * big)]].do { |a|
 			Pen.stringAtPoint(a[0], Point(a[1], a[2]), font.(11 * big, true), Color.gray(0.75));
+		};
+		// mode 2: a line between every pair with a distance, labelled with it (0-1)
+		if(mode == 2) {
+			4.do { |i|
+				4.do { |j|
+					var d = tagDist[i][j], a, b, label;
+					if(j > i and: { d.notNil } and: { voices[i][\hidden] != true } and: { voices[j][\hidden] != true }) {
+						a = toPixIn.(pos[i], w, h, r);
+						b = toPixIn.(pos[j], w, h, r);
+						Pen.strokeColor = Color.gray(0.85, 0.55);
+						Pen.width = 1.5 * big;
+						Pen.line(a, b);
+						Pen.stroke;
+						label = Rect.aboutPoint((a + b) / 2, 19 * big, 8 * big);
+						Pen.fillColor = Color.gray(0.13, 0.85);
+						Pen.fillRect(label);
+						Pen.stringCenteredIn(fmt2.(d), label, font.(11 * big, true), Color.white);
+					};
+				};
+			};
 		};
 		// a tag that has dropped out isn't shown
 		order.reject { |i| voices[i][\hidden] == true }.do { |i|
@@ -650,7 +749,9 @@ s.waitForBoot {
 		v.uwbText = StaticText(win, Rect(px + w - 158, py + 4, 150, 20))
 		.align_(\right).font_(font.(11, true));
 		StaticText(win, Rect(px + 10, py + 24, w - 20, 16))
-		.string_(v.axes).font_(font.(10)).stringColor_(Color.gray(0.65));
+		.string_(if(mode == 1) { v.axes } {
+			v.partners.collect { |j, k| "% → %".format(dKey.(i, j), v.distFx[k]) }.join("     ") ++ "     (closer = more)"
+		}).font_(font.(10)).stringColor_(Color.gray(0.65));
 		line1 = StaticText(win, Rect(px + 10, py + 40, w - 20, 18))
 		.font_(font.(12, true)).stringColor_(Color(1, 0.8, 0.4));
 		line2 = StaticText(win, Rect(px + 10, py + 57, w - 20, 18))
@@ -661,6 +762,16 @@ s.waitForBoot {
 			line1.string = lines[0];
 			line2.string = lines[1];
 		};
+		// mode 2: each effect's amount and the distance behind it ("dry" with none)
+		v[\showDist] = { |ds, amts|
+			var part = { |k|
+				"%: %  (% %)".format(v.distFx[k],
+					if(ds[k].isNil) { "dry" } { (amts[k] * 100).round.asInteger.asString ++ "%" },
+					dKey.(i, v.partners[k]), ds[k] !? fmt2 ? "–")
+			};
+			line1.string = part.(0) ++ "     " ++ part.(1);
+			line2.string = part.(2);
+		};
 
 		v.streamButton = Button(win, Rect(px + 10, py + 78, 160, 20))
 		.canFocus_(false)
@@ -669,9 +780,15 @@ s.waitForBoot {
 			["Streaming. Click to stop", Color.white, Color(0.1, 0.55, 0.3)]
 		])
 		.action_({ |b| if(b.value == 1) { startStream.(v) } { stopStream.(v) } });
-		v.statusText = StaticText(win, Rect(px + 178, py + 76, w - 186, 26))
+		v.statusText = StaticText(win, Rect(px + 178, py + 76, w - 266, 26))
 		.string_("Not streaming")
 		.font_(Font.monospace.size_(8)).stringColor_(Color.gray(0.6));
+		// Manual only: drop this tag as if it lost UWB, and bring it back
+		v.dropButton = Button(win, Rect(px + w - 82, py + 78, 74, 20))
+		.canFocus_(false)
+		.enabled_(false)
+		.states_([["Drop"], ["Dropped", Color.white, Color(0.85, 0.35, 0.3)]])
+		.action_({ |b| setDrop.(i, b.value == 1) });
 
 		thisProcess.openUDPPort(v.statusPort);
 		OSCdef(("fourTagsFXStatus" ++ i).asSymbol, { |msg|
@@ -693,8 +810,15 @@ s.waitForBoot {
 	voices.do { |v, i|
 		if(thisProcess.openUDPPort(uwbPort + i).not) { "Four Tags FX: can't listen on port %".format(uwbPort + i).warn };
 		OSCdef(("fourTagsFXUwb" ++ i).asSymbol, { |msg|
-			var data = try { msg[1].asString.parseJSON }, x, y;
-			if(data.isKindOf(Dictionary)) { x = data["x"]; y = data["y"] };
+			var data = if(manual.not) { try { msg[1].asString.parseJSON } }, x, y;   // Manual: ignore it
+			if(data.isKindOf(Dictionary)) {
+				x = data["x"]; y = data["y"];
+				// mode 2: this tag's distances to the others (nil while "N/A")
+				tagD[i] = voices.collect { |w, j|
+					var d = if(j != i) { data[dKey.(i, j)] };
+					if(d.notNil and: { d != "N/A" }) { d.asFloat }
+				};
+			};
 			if(x.notNil and: { y.notNil } and: { x != "N/A" } and: { y != "N/A" }) {
 				// outside the room x and y are sent far off the grid: keep the dot where it was
 				tagOut[i] = data["inside"].asString == "0";
@@ -729,6 +853,12 @@ s.waitForBoot {
 				var age = now - tagHeard[i], to, rate, state;
 				case
 				{ drag == i } { state = \dragged }
+				{ manual } {   // Manual ignores the UWB; a tag dropped with its number key acts like a real dropout
+					case
+					{ manualDrop[i].isNil } { state = \manual }
+					{ now - manualDrop[i] < holdS } { state = \held }
+					{ state = \lost; to = [0.5, 0.5]; rate = 1.5 };
+				}
 				{ (age < 0.6) and: { tagOut[i] } } { state = \outside }
 				{ age < 0.6 } { state = \live; to = tagXY[i]; rate = 12 }
 				{ simulate } {
@@ -739,6 +869,7 @@ s.waitForBoot {
 				}
 				{ age < holdS } { state = \held }
 				{ state = \lost; to = [0.5, 0.5]; rate = 1.5 };
+				v[\state] = state;
 				if(state != \simulated) { goal[i] = pos[i].copy };
 				// a tag that has dropped out (holding, or gone dry) or walked out of the room
 				// is taken off the pad and its fader muted (on its speaker and the laptop);
@@ -756,11 +887,12 @@ s.waitForBoot {
 				if(state != shown[i]) {
 					shown[i] = state;
 					v.uwbText.string = (live: "UWB live", outside: "outside · muted", held: "dropped · holding", lost: "dropped · dry",
-						simulated: "no UWB · simulated", dragged: "dragging")[state];
+						simulated: "no UWB · simulated", dragged: "dragging", manual: "manual · drag it")[state];
 					v.uwbText.stringColor = (live: Color(0.45, 0.9, 0.5), outside: Color(0.7, 0.7, 0.7), held: Color(1, 0.8, 0.3),
-						lost: Color(0.95, 0.45, 0.4), simulated: Color(0.6, 0.85, 1), dragged: Color.white)[state];
+						lost: Color(0.95, 0.45, 0.4), simulated: Color(0.6, 0.85, 1), dragged: Color.white, manual: Color(1, 0.6, 0.9))[state];
 				};
 			};
+			if(mode == 2 and: { applyDists.() }) { moved = true };
 			if(moved) { refreshPads.() };
 			dt.wait;
 		}
@@ -783,6 +915,39 @@ s.waitForBoot {
 	.value_(simulate)
 	.action_({ |c| simulate = c.value });
 	StaticText(win, Rect(320, bottomY, 130, 22)).string_("Simulate people").font_(font.(12)).stringColor_(Color.gray(0.8));
+
+	// Manual (temporary, for testing by hand): the UWB coming in is ignored and
+	// all four dots show, stay where they're dragged and play (in mode 2 their
+	// distances come from the pad). Turning it on spreads them over the four quarters.
+	// Each row's Drop button (or keys 1-4) drops its tag (hidden and muted, held
+	// 3 s, then dry, like a real dropout) and brings it back.
+	setDrop = { |i, on|
+		manualDrop[i] = if(on) { Main.elapsedTime };
+		voices[i].dropButton.value = on.binaryValue;
+	};
+	CheckBox(win, Rect(456, bottomY, 22, 22))
+	.canFocus_(false)
+	.value_(manual)
+	.action_({ |c|
+		manual = c.value;
+		4.do { |i| setDrop.(i, false); voices[i].dropButton.enabled = manual };
+		if(manual) {
+			4.do { |i| setDot.(i, [[0.25, 0.75], [0.75, 0.75], [0.25, 0.25], [0.75, 0.25]][i]) };
+		};
+	});
+	StaticText(win, Rect(480, bottomY, 140, 22)).string_("Manual (1-4 drop)").font_(font.(12)).stringColor_(Color.gray(0.8));
+
+	// mode 2: every pair's distance (the pad's lines), "–" while either tag is out
+	if(mode == 2) {
+		distText = StaticText(win, Rect(16, bottomY + 28, winW - 32, 20))
+		.font_(Font.monospace.size_(12)).stringColor_(Color.white);
+		showDists = {
+			var pairs = List[];
+			4.do { |i| 4.do { |j| if(j > i) { pairs.add("% %".format(dKey.(i, j), tagDist[i][j] !? fmt2 ? "  –")) } } };
+			if(distText.isClosed.not) { distText.string = "Distances   " ++ pairs.join("    ") ++ "    (0 same spot · 1 corner to corner)" };
+		};
+		showDists.();
+	};
 
 	Button(win, Rect(winW - 142, bottomY - 1, 130, 24))
 	.canFocus_(false)
@@ -861,6 +1026,7 @@ s.waitForBoot {
 		case
 		{ char == $  } { playButton.valueAction = 1 - playButton.value; true }
 		{ (char == $f) or: { char == $F } } { toggleFull.(); true }
+		{ manual and: { "1234".includes(char) } } { var i = char.digit - 1; setDrop.(i, manualDrop[i].isNil); true }
 		{ (char == $m) or: { char == $M } } { if(mixWin.notNil) { mixWin.close } { makeMixer.() }; true }
 		{ nil }
 	};

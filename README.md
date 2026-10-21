@@ -42,6 +42,8 @@ python3 uwb.py                # just the terminal view (it includes the OSC brid
 - Each tag drawn where its `x`, `y` put it, with a short trail.
 - A row per tag: online or offline, exactly the `x`, `y` and `inside` being
   sent, and its distance to each anchor in feet.
+- A "Tag to tag" row: the `d12` ... `d34` being sent (0 the same spot, 1 corner
+  to corner).
 - The UWB anchor-to-anchor distances next to the tape-measured ones, with the
   difference highlighted when it is more than half a foot.
 
@@ -57,6 +59,25 @@ restarts if the layout is changed later. Each tag's dot follows `/tagN`, a
 dropped tag is hidden and muted, and each tag's sound streams to its own
 speaker. It writes its output to `build/sclang.log`, and `q` stops it too.
 `SOUND=0` leaves the sound off.
+
+`PLAY_MODE` at the top of `startUwb.sh` (or `PLAY_MODE=2 ./startUwb.sh`)
+picks how Four Tags FX plays; the OSC is the same in both:
+
+- `1` absolute (the default): each tag's effects follow where it is in the room.
+- `2` relative: each tag's three effects follow its distances to the other
+  three tags, closer is more (none at corner to corner, full on the same spot).
+  A pair is dry while either tag is dropped or outside the room. The pad draws
+  a line between each pair with its distance.
+
+  | Tag | | | |
+  |---|---|---|---|
+  | 1 kalimba | `d12` Echo | `d13` PitShift | `d14` Stutter |
+  | 2 flute | `d12` SinOscFB | `d23` slower | `d24` grains |
+  | 3 apad | `d13` Greyhole | `d23` grains | `d34` stutter |
+  | 4 sine | `d14` Squiz | `d24` LFPulse | `d34` Stutter |
+
+  Walking out of the room (muted, the noisy cycle on that tag's speaker) works
+  as in mode 1.
 
 Everything it needs is in `supercollider/`: the four synths (`SynthDefs/`)
 and their patterns (`pbind-demos/`) from SCLOrkSynths, and copies of the two
@@ -164,7 +185,7 @@ message, about 20 per second per tag with four tags. The message goes to
 `/tagN` on port 8999 + N (`/tag1` on 9000), with one JSON string argument:
 
 ```
-{"x": 0.24, "y": -0.18, "inside": 1}
+{"x": 0.24, "y": -0.18, "inside": 1, "d12": 0.3176, "d13": "N/A", "d14": 0.4102}
 ```
 
 - `x`, `y`: -1 to 1 across the anchor grid:
@@ -172,10 +193,14 @@ message, about 20 per second per tag with four tags. The message goes to
   A tag outside the shape reads as the nearest edge.
 - `inside`: 1 while the tag is within the anchor shape, 0 when it is outside.
   The simulator's people never leave, so it always sends 1.
+- `dAB` (`/tag1` has `d12`, `d13`, `d14`; `/tag2` has `d12`, `d23`, `d24`; ...):
+  the distance to each other tag, in the same -1 to 1 `x`, `y` space divided by
+  corner to corner (2√2), so 0 is the same spot and 1 is corner to corner. It is
+  worked out from the two tags' positions and is `"N/A"` unless both are inside.
 
-Distances between tags are not measured: anchor 1 only ranges tag-to-anchor
+Distances between tags are not ranged: anchor 1 only ranges tag-to-anchor
 (and, one at a time, anchor-to-anchor) pairs, which keeps each tag's readings
-coming as often as possible.
+coming as often as possible. `dAB` comes from the tags' positions instead.
 - `"N/A"`: no reading in the last second (with smoothing: fewer than three
   anchors in the last 0.3 s, for longer than the 0.5 s hold). Every key is
   always present; unavailable values are `"N/A"`, never omitted.

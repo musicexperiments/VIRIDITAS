@@ -12,8 +12,11 @@ every tag's message, and the UWB anchor-to-anchor distances next to the tape.
 With --sound-script (startUwb.sh with SOUND=1), SuperCollider runs that script
 (Four Tags FX) once the layout menu is done, since it draws its pad from
 layout.json, and again whenever the layout is changed from the view; q stops it.
-A line in the view shows whether it is running and which tags' speakers it is
-streaming to.
+A line in the view shows whether it is running, its play mode and which tags'
+speakers it is streaming to. --play-mode (PLAY_MODE in startUwb.sh) is handed to
+it: 1 absolute (each tag's effects follow where it is in the room), 2 relative
+(they follow its distances to the other tags, d12 ... d34, which every /tagN
+message carries in both modes).
 
 The OSC keeps sending the whole time, including while the layout menu is open.
 Keys: l layout menu · s smoothing on/off · , . calmer/livelier when still ·
@@ -41,6 +44,7 @@ SIDES = [(1, 3), (3, 4), (4, 5), (1, 5), (1, 4), (3, 5)]  # four sides, then bot
 TRAIL = 14
 SCLANG = '/Applications/SuperCollider.app/Contents/MacOS/sclang'
 SOUND = {'speakers': set()}  # Four Tags FX's streaming speakers, refreshed by watch_sound
+PLAY_MODES = {1: 'absolute', 2: 'relative'}
 
 
 def pair_name(a, b):
@@ -193,6 +197,7 @@ class Sound:
         log = osc_bridge.ROOT / (self.args.sound_log or 'build/sclang.log')
         log.parent.mkdir(exist_ok=True)
         env = dict(os.environ, VIRIDITAS_DIR=str(osc_bridge.ROOT), FOUR_TAGS_STANDALONE='1',
+                   FOUR_TAGS_MODE=str(self.args.play_mode),
                    UWB_SC_PORT=str(self.args.also_port[0] if self.args.also_port else 9100))
         print(f'Starting SuperCollider ({os.path.basename(self.args.sound_script)}), log in {log}…')
         with open(log, 'w') as out:
@@ -314,17 +319,20 @@ def draw(screen, bridge, args, state):
         put(4, 10, f'● Four Tags FX not running (see {args.sound_log})', bad | bold)
     else:
         put(4, 10, '● Four Tags FX', good | bold)
-        put(4, 25, 'speakers', dim)
+        mode = f'mode {args.play_mode} {PLAY_MODES[args.play_mode]}'
+        put(4, 25, mode, bold)
+        put(4, 26 + len(mode), 'speakers', dim)
+        c = 35 + len(mode)
         for i, tag in enumerate(tags):
             streaming = tag in SOUND['speakers']
-            put(4, 34 + 5 * i, f'● T{tag}', good if streaming else bad | bold)
-        put(4, 35 + 5 * len(tags), f'· /tagN → {args.osc_host}:{args.also_port[0] if args.also_port else "–"}+ · '
+            put(4, c + 5 * i, f'● T{tag}', good if streaming else bad | bold)
+        put(4, c + 1 + 5 * len(tags), f'· /tagN → {args.osc_host}:{args.also_port[0] if args.also_port else "–"}+ · '
                                    f'log {args.sound_log}', dim)
 
     # Map: real proportions from the layout, Anchor 1 top-left.
     width = math.dist(pos[1], pos[3]) if 1 in pos and 3 in pos else 1
     height = math.dist(pos[3], pos[4]) if 3 in pos and 4 in pos else 1
-    info_rows = len(tags) + 9
+    info_rows = len(tags) + 11
     map_rows, map_cols = max(5, rows - info_rows - 6), cols - 12
     scale = min(map_cols / width, 2 * map_rows / height)  # cells are about twice as tall as wide
     box_w, box_h = max(4, round(width * scale)), max(2, round(height * scale / 2))
@@ -380,6 +388,18 @@ def draw(screen, bridge, args, state):
         spikes = state['spike_rate'].get(node, 0)
         if tuning['on'] and spikes:
             put(row, 87 if stats.get('held') or stats.get('outvoted') else 78, f'{spikes:.0f} spk/s', dim)
+
+    # Tag to tag: the dAB being sent (0 the same spot, 1 corner to corner).
+    row += 2
+    put(row, 1, 'Tag to tag', curses.A_UNDERLINE)
+    c = 13
+    for i, a in enumerate(tags):
+        for b in tags[i + 1:]:
+            d = bridge.last_message.get(a, {}).get(f'd{a}{b}', MISSING)
+            put(row, c, f'd{a}{b}', bold)
+            put(row, c + len(f'd{a}{b}') + 1, f'{d:.3f}' if isinstance(d, float) else '  –  ', 0 if isinstance(d, float) else dim)
+            c += len(f'd{a}{b}') + 9
+    put(row, c, '(0 same spot · 1 corner to corner)', dim)
 
     # Anchors: UWB against the tape.
     row += 2
@@ -469,6 +489,9 @@ def main():
     parser = osc_bridge.make_parser(__doc__)
     parser.add_argument('--sound-script', help='SuperCollider script to run once the layout is set (Four Tags FX)')
     parser.add_argument('--sound-log', default='build/sclang.log', help="SuperCollider's log")
+    parser.add_argument('--play-mode', type=int, choices=sorted(PLAY_MODES), default=1,
+                        help="Four Tags FX's effects follow 1: each tag's place in the room, "
+                             '2: its distances to the other tags')
     args = parser.parse_args()
     # Ctrl-Z would pause the bridge and silently stop the OSC (with the ports still held).
     signal.signal(signal.SIGTSTP, signal.SIG_IGN)

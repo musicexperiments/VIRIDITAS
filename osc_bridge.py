@@ -7,10 +7,13 @@ range that involves a tag, the tag is re-located and one OSC message goes out:
 
   /tag1 -> port 9000, /tag2 -> 9001, ... (tag N on base port + N - 1)
   the same messages also go to 9100, 9101, ... for SuperCollider (--also-port)
-  argument: a JSON string {"x": .., "y": .., "inside": ..}
+  argument: a JSON string {"x": .., "y": .., "inside": .., "d12": .., ...}
 
 x and y run -1 to 1 across the anchors' grid: A1 (-1, 1), A2 (1, 1), A3 (1, -1), A4 (-1, -1).
 Outside the room both x and y are sent as OUTSIDE (10.0), off the pixel space, with inside = 0.
+dAB (d12, d13, ... in tag order) is the distance from this tag to each other tag, in the
+same -1..1 x, y space over corner to corner (2√2): 0 is the same spot, 1 corner to corner.
+It is "N/A" unless both tags are in the room.
 A value that has not been read (no fresh range) is the string "N/A". Every
 tag's port keeps sending, twice a second at least, with every key present, even
 when that tag, anchor 1 or the anchor layout is unavailable.
@@ -46,6 +49,7 @@ DEFAULT_FRAME = {1: (-1.0, 1.0), 3: (1.0, 1.0), 4: (1.0, -1.0), 5: (-1.0, -1.0)}
 FRESH_S = 1.0  # A range older than this is not used.
 MISSING = "N/A"
 OUTSIDE = 10.0  # x and y sent for a tag outside the room: far off the -1..1 pixel space.
+CORNER_TO_CORNER = 2 * math.sqrt(2)  # the longest distance in the -1..1 x, y space
 FILTER = ROOT / 'filter.json'  # Smoothing settings, written by uwb.py.
 FILTER_DEFAULTS = {
     'on': True,
@@ -396,6 +400,19 @@ class Bridge:
         reading = self.ranges.get((min(a, b), max(a, b)))
         return reading[0] if reading and now - reading[1] < FRESH_S else None
 
+    def partner_distances(self, me, message):
+        """dAB to every other tag, from this message and the other tag's last one
+        (every tag sends at least twice a second, so it is never older than 0.5 s)."""
+        others = sorted({tag_number(n) for n in self.known_tags | self.configured_tags} - {me})
+        out = {}
+        for other in others:
+            theirs = self.last_message.get(other, {})
+            both_inside = message['inside'] == 1 and theirs.get('inside') == 1
+            out[f'd{min(me, other)}{max(me, other)}'] = round(
+                math.dist((message['x'], message['y']), (theirs['x'], theirs['y'])) / CORNER_TO_CORNER, 4
+            ) + 0.0 if both_inside else MISSING
+        return out
+
     def heartbeat(self, now):
         """A tag with no new ranges (offline) still reports, with "N/A" values."""
         for tag in self.known_tags | self.configured_tags:
@@ -486,6 +503,7 @@ class Bridge:
             # Gone for longer than the hold: start the smoothing afresh when it is back.
             self.point_filter.pop(tag, None)
         me = tag_number(tag)
+        message.update(self.partner_distances(me, message))
         text = json.dumps(message, separators=(', ', ': '))
         packet = osc_message(f'/tag{me}', text)
         for base in [self.args.osc_port] + self.args.also_port:

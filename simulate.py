@@ -7,8 +7,10 @@ osc_bridge.py, so software can be written and tested without the hardware.
 A single file with no dependencies beyond Python 3 (standard library only).
 
 Each person is a tag: /tagN on UDP port 8999 + N (/tag1 on 9000, /tag2 on
-9001, ...) at 127.0.0.1, one JSON string argument {"x": .., "y": .., "inside": ..}.
+9001, ...) at 127.0.0.1, one JSON string argument {"x": .., "y": .., "inside": .., "d12": .., ...}.
 x and y run -1 to 1 across the shape (A1 (-1, 1), A2 (1, 1), A3 (1, -1), A4 (-1, -1)).
+dAB is the distance to each other tag in that same space over corner to corner (2√2):
+0 the same spot, 1 corner to corner, "N/A" when either tag has nobody.
 The data behaves like the hardware: a few centimetres of noise.
 Anchor 1 is the top-left corner, then clockwise, as in uwb.py.
 
@@ -212,8 +214,15 @@ class Simulation:
         return data
 
     def send_all(self):
-        for number in range(1, self.tag_count + 1):
-            data = self.message(number)
+        messages = {number: self.message(number) for number in range(1, self.tag_count + 1)}
+        for number, data in messages.items():
+            for other, theirs in messages.items():
+                if other != number:
+                    both = data['inside'] == 1 and theirs['inside'] == 1
+                    data[f'd{min(number, other)}{max(number, other)}'] = round(
+                        math.dist((data['x'], data['y']), (theirs['x'], theirs['y'])) / (2 * math.sqrt(2)), 4
+                    ) + 0.0 if both else MISSING
+        for number, data in messages.items():
             text = json.dumps(data, separators=(', ', ': '))
             packet = osc_message(f'/tag{number}', text)
             for first in (FIRST_PORT, SC_FIRST_PORT):

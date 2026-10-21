@@ -224,7 +224,20 @@ class Smoothing(unittest.TestCase):
     def test_every_key_present(self):
         bridge = make_bridge()
         bridge.heartbeat(100.0)
-        self.assertEqual(set(bridge.last_message[1]), {'x', 'y', 'inside'})
+        self.assertEqual(set(bridge.last_message[1]), {'x', 'y', 'inside', 'd12'})
+
+    def test_partner_distances(self):
+        # 0 is the same spot, 1 corner to corner; "N/A" unless both tags are in the room.
+        bridge = make_bridge()
+        me = {'x': -1.0, 'y': 1.0, 'inside': 1}
+        for theirs, expected in (({'x': 1.0, 'y': -1.0, 'inside': 1}, 1.0),
+                                 ({'x': -1.0, 'y': 1.0, 'inside': 1}, 0.0),
+                                 ({'x': 1.0, 'y': 1.0, 'inside': 1}, round(2 / osc_bridge.CORNER_TO_CORNER, 4)),
+                                 ({'x': 10.0, 'y': 10.0, 'inside': 0}, osc_bridge.MISSING),
+                                 ({'x': 'N/A', 'y': 'N/A', 'inside': 'N/A'}, osc_bridge.MISSING)):
+            bridge.last_message[2] = theirs
+            self.assertEqual(bridge.partner_distances(1, me), {'d12': expected})
+        self.assertEqual(bridge.partner_distances(1, {'x': 10.0, 'y': 10.0, 'inside': 0}), {'d12': osc_bridge.MISSING})
 
 
 def report():

@@ -12,6 +12,9 @@
 #
 #   ./startUwb.sh                  # anchor 1 at 10.10.10.183
 #   ./startUwb.sh 10.10.10.200     # or give anchor 1's IP / hostname
+#   PLAY_MODE=2 ./startUwb.sh      # skip the play mode question
+#
+# On start it asks which play mode to run (Enter for 1).
 #
 # q in the view (or Ctrl-C) stops both and frees their ports.
 
@@ -19,6 +22,10 @@ cd "$(dirname "$0")" || exit 1
 
 ANCHOR="${1:-10.10.10.183}"
 SOUND=1  # 1 starts SuperCollider (Four Tags FX, SC_SCRIPT); 0 leaves the sound off.
+# Play mode, asked on start: 1 absolute, each tag's effects follow where it is
+# in the room; 2 relative, they follow its distances to the other tags (d12 ...
+# d34, 0 the same spot, 1 corner to corner; closer is more). The OSC is the
+# same in both.
 SC_SCRIPT="$PWD/supercollider/four-tags-fx.scd"   # with its SynthDefs/ and pbind-demos/ beside it
 TAGS=4         # /tag1 to /tagN, always sent
 SC_PORT=9100   # /tag1 to SuperCollider on this port, /tag2 on the next, ...
@@ -70,8 +77,16 @@ if [ "$SOUND" != 1 ]; then
 elif [ ! -f "$SC_SCRIPT" ]; then
   echo "SuperCollider script not found at $SC_SCRIPT; skipping it."
 else
+  while [ "$PLAY_MODE" != 1 ] && [ "$PLAY_MODE" != 2 ]; do
+    echo "Play mode:"
+    echo "  1) absolute: each tag's effects follow where it is in the room"
+    echo "  2) relative: each tag's effects follow its distances to the other tags"
+    read -r -p "Choose 1 or 2 [1]: " PLAY_MODE || exit 1
+    PLAY_MODE="${PLAY_MODE:-1}"
+  done
+  echo "Play mode $PLAY_MODE."
   echo "SuperCollider ($(basename "$SC_SCRIPT")) starts once the anchor layout is set, log in $SCLANG_LOG."
-  sound=(--sound-script "$SC_SCRIPT" --sound-log "$SCLANG_LOG")
+  sound=(--sound-script "$SC_SCRIPT" --sound-log "$SCLANG_LOG" --play-mode "$PLAY_MODE")
 fi
 
 # The terminal view runs the OSC bridge: /tagN -> 9000+ (Unreal) and 9100+ (SuperCollider).
